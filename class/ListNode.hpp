@@ -17,9 +17,10 @@ class ListNode {
     /**
      * 构造函数
      * @param fileId 文件编号
+     * @param weight 权重
      * @param freq 词频
      */
-    ListNode(const int& fileId, const int freq = 0, const double weight = 0);
+    ListNode(const int& fileId, const double weight = 0, const int freq = 0);
 
     /**
      * 设置当前节点的下一个节点
@@ -28,7 +29,7 @@ class ListNode {
     void setNext(ListNode* x);
 };
 
-ListNode::ListNode(const int& fileId, const int freq, const double weight) {
+ListNode::ListNode(const int& fileId, const double weight, const int freq) {
     this->fileId = fileId;
     this->freq = freq;
     this->weight = weight;

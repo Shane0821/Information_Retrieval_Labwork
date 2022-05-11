@@ -33,8 +33,9 @@ class PostingList {
     /**
      * @return 和 list 等价的 vector
      */
-    vector<int> toVector();
+    vector<pair<int, double>> toVector();
 
+    // 初始化所有节点权重，注意若插入新节点需要重新初始化
     void initWeight(const int& n);
 };
 
@@ -65,13 +66,21 @@ void PostingList::insert(ListNode* x) {
     totalFreq += x->freq;
 }
 
-vector<int> PostingList::toVector() {
+vector<pair<int, double>> PostingList::toVector() {
     auto p = head;
-    vector<int> ans;
+    vector<pair<int, double>> ans;
     while (p) {
-        ans.push_back(p->fileId);
+        ans.push_back({p->fileId, p->weight});
         p = p->nxt;
     }
+
+    auto cmp = [&](const pair<int, double>& a,
+                   const pair<int, double>& b) -> bool {
+        if (a.second == b.second) return a.first < b.first;
+        return a.second > b.second;
+    };
+
+    sort(ans.begin(), ans.end(), cmp);
     return ans;
 }
 
