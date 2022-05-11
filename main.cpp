@@ -8,15 +8,6 @@ using namespace std;
  * encoding: GBK
  */
 
-/**
- *   
- * 
- * 
- * 
- * 
- * 
- */
-
 signed main() {
     InvertedIndex myLexicon;
     myLexicon.loadFromDataset();

@@ -34,6 +34,8 @@ class PostingList {
      * @return 和 list 等价的 vector
      */
     vector<int> toVector();
+
+    void initWeight(const int& n);
 };
 
 PostingList::PostingList() {
@@ -71,4 +73,12 @@ vector<int> PostingList::toVector() {
         p = p->nxt;
     }
     return ans;
+}
+
+void PostingList::initWeight(const int& n) {
+    auto p = head;
+    while (p) {
+        p->weight = log10(1.0 * n / cntFile) * p->freq;
+        p = p->nxt;
+    }
 }

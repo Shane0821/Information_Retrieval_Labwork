@@ -17,10 +17,14 @@ class InvertedIndex {
     // title 中字符索引
     unordered_map<string, PostingList*> dictTitle;
 
-   private:
-    double gTitle;
-    double gBody;
+    // 标题权重
+    static double gTitle;
+    // 内容权重
+    static double gBody;
+    // database 中文档总数
+    static int n;
 
+   private:
     /**
      * @param a PostingList 1
      * @param b PostingList 2
@@ -56,10 +60,7 @@ class InvertedIndex {
 
    public:
     // 构造函数
-    InvertedIndex() {
-        gTitle = 0.3;
-        gBody = 0.7;
-    }
+    InvertedIndex() = default;
     // 析构函数
     ~InvertedIndex();
     // 加载数据
@@ -95,14 +96,16 @@ class InvertedIndex {
      */
     vector<int> minus2(const string a, const string b, string type = "body");
 };
+double InvertedIndex::gBody = 0.7;
+double InvertedIndex::gTitle = 0.3;
+int InvertedIndex::n = 265;
 
 InvertedIndex::~InvertedIndex() {
     for (auto& p : dictBody) delete p.second;
 }
 
 void InvertedIndex::loadFromDataset() {
-    int cntFile = 265;
-    for (int i = 1; i <= cntFile; i++) {
+    for (int i = 1; i <= n; i++) {
         // generate file name
         stringstream ss;
 
@@ -161,6 +164,11 @@ void InvertedIndex::loadFromDataset() {
         }
     }
     cout << "Dataset loaded successfully!\n";
+
+    // 初始化文件权重
+    for (auto& p : dictBody) p.second->initWeight(n);
+    for (auto& p : dictTitle) p.second->initWeight(n);
+    cout << "Weight initialized.\n";
 }
 vector<pair<int, double>> InvertedIndex::zoneScore(const vector<int>& vBody,
                                                    const vector<int>& vTitle) {
@@ -206,7 +214,7 @@ PostingList* InvertedIndex::intersect2(PostingList* a, PostingList* b) {
     // pa 和 pb 只要都不为空就可以取交集
     while (pa && pb) {
         if (pa->fileId == pb->fileId) {  // 文件 id 相同，加入交集
-            ans->insert(new ListNode(pa->fileId, min(pa->freq, pb->freq)));
+            ans->insert(new ListNode(pa->fileId, pa->freq + pb->freq));
             pa = pa->nxt;
             pb = pb->nxt;
         } else if (pa->fileId <
