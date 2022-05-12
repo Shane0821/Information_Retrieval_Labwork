@@ -182,20 +182,21 @@ vector<pair<int, double>> InvertedIndex::zoneScore(
     vector<pair<int, double>> ans;
     while (i < n || j < m) {
         if (j == m) {  // 仅在body 中出现
-            ans.push_back({vBody[i].first, gBody});
+            ans.push_back({vBody[i].first, gBody * vBody[i].second});
             i++;
         } else if (i == n) {  // 仅在title 中出现
-            ans.push_back({vTitle[j].first, gTitle});
+            ans.push_back({vTitle[j].first, gTitle * vTitle[j].second});
             j++;
         } else if (vBody[i].first == vTitle[j].first) {  // title + body 中出现
-            ans.push_back({vBody[i].first, gBody + gTitle});
+            ans.push_back({vBody[i].first, gBody * vBody[i].second +
+                                               gTitle * vTitle[j].second});
             i++;
             j++;
         } else if (vBody[i].first < vBody[j].first) {  // 仅在body 中出现
-            ans.push_back({vBody[i].first, gBody});
+            ans.push_back({vBody[i].first, gBody * vBody[i].second});
             i++;
         } else {  // 仅在title 中出现
-            ans.push_back({vTitle[j].first, gTitle});
+            ans.push_back({vTitle[j].first, gTitle * vTitle[j].second});
             j++;
         }
     }

@@ -37,7 +37,8 @@ signed main() {
                 auto v = myLexicon.intersectMulti(query, pos);
                 cout << "满足查询条件的文档 id：\n";
                 if (v.size())
-                    for (auto& [id, score] : v) cout << id << " ";
+                    for (auto& [id, score] : v)
+                        cout << id << ": " << score << endl;
                 else
                     cout << "null";
                 cout << endl;
@@ -45,7 +46,8 @@ signed main() {
                 auto v = myLexicon.intersectMulti(query, pos);
                 cout << "满足查询条件的文档 id：\n";
                 if (v.size())
-                    for (auto& [id, score] : v) cout << id << " ";
+                    for (auto& [id, score] : v)
+                        cout << id << ": " << score << endl;
                 else
                     cout << "null";
                 cout << endl;
@@ -77,7 +79,8 @@ signed main() {
                 auto v = myLexicon.unionMulti(query, pos);
                 cout << "满足查询条件的文档 id：\n";
                 if (v.size())
-                    for (auto& [id, score] : v) cout << id << " ";
+                    for (auto& [id, score] : v)
+                        cout << id << ": " << score << endl;
                 else
                     cout << "null";
                 cout << endl;
@@ -85,7 +88,8 @@ signed main() {
                 auto v = myLexicon.unionMulti(query, pos);
                 cout << "满足查询条件的文档 id：\n";
                 if (v.size())
-                    for (auto& [id, score] : v) cout << id << " ";
+                    for (auto& [id, score] : v)
+                        cout << id << ": " << score << endl;
                 else
                     cout << "null";
                 cout << endl;
@@ -116,7 +120,7 @@ signed main() {
 
             cout << "满足查询条件的文档 id：\n";
             if (v.size())
-                for (auto& [id, score] : v) cout << id << " ";
+                for (auto& [id, score] : v) cout << id << ": " << score << endl;
             else
                 cout << "null";
             cout << endl;
