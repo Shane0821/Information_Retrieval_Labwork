@@ -85,9 +85,10 @@ vector<pair<int, double>> PostingList::toVector() {
 }
 
 void PostingList::initWeight(const int& n) {
+    double idf = log10(1.0 * n / cntFile);
     auto p = head;
     while (p) {
-        p->weight = log10(1.0 * n / cntFile) * p->freq;
+        p->weight = idf * p->freq;
         p = p->nxt;
     }
 }
