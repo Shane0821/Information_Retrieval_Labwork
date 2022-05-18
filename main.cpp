@@ -37,8 +37,8 @@ signed main() {
                 auto v = myLexicon.intersectMulti(query, pos);
                 cout << "满足查询条件的文档 id：\n";
                 if (v.size())
-                    for (auto& [id, score] : v)
-                        cout << id << ": " << score << endl;
+                    for (auto& node : v)
+                        cout << node.fileId << ": " << node.weight << endl;
                 else
                     cout << "null";
                 cout << endl;
@@ -46,8 +46,8 @@ signed main() {
                 auto v = myLexicon.intersectMulti(query, pos);
                 cout << "满足查询条件的文档 id：\n";
                 if (v.size())
-                    for (auto& [id, score] : v)
-                        cout << id << ": " << score << endl;
+                    for (auto& node : v)
+                        cout << node.fileId << ": " << node.weight << endl;
                 else
                     cout << "null";
                 cout << endl;
@@ -55,10 +55,10 @@ signed main() {
                 auto v1 = myLexicon.intersectMulti(query, "body");
                 auto v2 = myLexicon.intersectMulti(query, "title");
                 auto v3 = myLexicon.zoneScore(v1, v2);
-                cout << "满足查询条件的文档 id & score：\n";
+                cout << "满足查询条件的文档 node.fileId & score：\n";
                 if (v3.size())
-                    for (auto& [id, score] : v3)
-                        cout << id << ": " << score << endl;
+                    for (auto& node : v3)
+                        cout << node.fileId << ": " << node.weight << endl;
                 else
                     cout << "null\n";
             }
@@ -79,8 +79,8 @@ signed main() {
                 auto v = myLexicon.unionMulti(query, pos);
                 cout << "满足查询条件的文档 id：\n";
                 if (v.size())
-                    for (auto& [id, score] : v)
-                        cout << id << ": " << score << endl;
+                    for (auto& node : v)
+                        cout << node.fileId << ": " << node.weight << endl;
                 else
                     cout << "null";
                 cout << endl;
@@ -88,8 +88,8 @@ signed main() {
                 auto v = myLexicon.unionMulti(query, pos);
                 cout << "满足查询条件的文档 id：\n";
                 if (v.size())
-                    for (auto& [id, score] : v)
-                        cout << id << ": " << score << endl;
+                    for (auto& node : v)
+                        cout << node.fileId << ": " << node.weight << endl;
                 else
                     cout << "null";
                 cout << endl;
@@ -97,10 +97,10 @@ signed main() {
                 auto v1 = myLexicon.unionMulti(query, "body");
                 auto v2 = myLexicon.unionMulti(query, "title");
                 auto v3 = myLexicon.zoneScore(v1, v2);
-                cout << "满足查询条件的文档 id & score：\n";
+                cout << "满足查询条件的文档 node.fileId & score：\n";
                 if (v3.size())
-                    for (auto& [id, score] : v3)
-                        cout << id << ": " << score << endl;
+                    for (auto& node : v3)
+                        cout << node.fileId << ": " << node.weight << endl;
                 else
                     cout << "null\n";
             }
@@ -120,7 +120,7 @@ signed main() {
 
             cout << "满足查询条件的文档 id：\n";
             if (v.size())
-                for (auto& [id, score] : v) cout << id << ": " << score << endl;
+                for (auto& node : v) cout << node.fileId << ": " << node.weight << endl;
             else
                 cout << "null";
             cout << endl;

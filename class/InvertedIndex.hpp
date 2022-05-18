@@ -36,7 +36,7 @@ class InvertedIndex {
      * @param queries 查询 PostingList 集合
      * @return fileId 交集
      */
-    vector<pair<int, double>> intersectMulti(vector<PostingList*>& queries);
+    vector<ListNode> intersectMulti(vector<PostingList*>& queries);
 
     /**
      * @param a PostingList 1
@@ -49,14 +49,14 @@ class InvertedIndex {
      * @param queries 查询 PostingList 集合
      * @return fileId 并集
      */
-    vector<pair<int, double>> unionMulti(vector<PostingList*>& queries);
+    vector<ListNode> unionMulti(vector<PostingList*>& queries);
 
     /**
      * @param a 关键字 1
      * @param b 关键字 2
      * @return fileId 差集
      */
-    vector<pair<int, double>> minus2(PostingList* a, PostingList* b);
+    vector<ListNode> minus2(PostingList* a, PostingList* b);
 
    public:
     // 构造函数
@@ -71,25 +71,23 @@ class InvertedIndex {
      * @param b title 中查询得到的 fileId 集合
      * @return 两个 fileId 集合的加权合并
      */
-    vector<pair<int, double>> zoneScore(
-        const vector<pair<int, double>>& vBody,
-        const vector<pair<int, double>>& vTitle);
+    vector<ListNode> zoneScore(const vector<ListNode>& vBody,
+                               const vector<ListNode>& vTitle);
 
     /**
      * @param queries 查询字符集合
      * @param type 查询区域
      * @return fileId 交集
      */
-    vector<pair<int, double>> intersectMulti(vector<string> queries,
-                                             string type = "body");
+    vector<ListNode> intersectMulti(vector<string> queries,
+                                    string type = "body");
 
     /**
      * @param queries 查询字符集合
      * @param type 查询区域
      * @return fileId 并集
      */
-    vector<pair<int, double>> unionMulti(vector<string> queries,
-                                         string type = "body");
+    vector<ListNode> unionMulti(vector<string> queries, string type = "body");
 
     /**
      * @param a 查询字符 1
@@ -97,8 +95,8 @@ class InvertedIndex {
      * @param type 查询区域
      * @return fileId 差集
      */
-    vector<pair<int, double>> minus2(const string a, const string b,
-                                     string type = "body");
+    vector<ListNode> minus2(const string a, const string b,
+                            string type = "body");
 };
 double InvertedIndex::gBody = 0.7;
 double InvertedIndex::gTitle = 0.3;
@@ -145,7 +143,7 @@ void InvertedIndex::loadFromDataset() {
             // 索引指向一个 PostingList
             if (!dictBody[pii.first]) dictBody[pii.first] = new PostingList;
             // PostingList 中插入节点
-            dictBody[pii.first]->insert(new ListNode(i, 0, pii.second));
+            dictBody[pii.first]->insert(ListNode(i, 0, pii.second));
         }
 
         // caculate freq of each char in title
@@ -164,7 +162,7 @@ void InvertedIndex::loadFromDataset() {
             // 索引指向一个 PostingList
             if (!dictTitle[pii.first]) dictTitle[pii.first] = new PostingList;
             // PostingList 中插入节点
-            dictTitle[pii.first]->insert(new ListNode(i, 0, pii.second));
+            dictTitle[pii.first]->insert(ListNode(i, 0, pii.second));
         }
     }
     cout << "Dataset loaded successfully!\n";
@@ -174,68 +172,60 @@ void InvertedIndex::loadFromDataset() {
     for (auto& p : dictTitle) p.second->initWeight(n);
     cout << "Weight initialized.\n";
 }
-vector<pair<int, double>> InvertedIndex::zoneScore(
-    const vector<pair<int, double>>& vBody,
-    const vector<pair<int, double>>& vTitle) {
+
+vector<ListNode> InvertedIndex::zoneScore(const vector<ListNode>& vBody,
+                                          const vector<ListNode>& vTitle) {
     int n = vBody.size(), m = vTitle.size();
     int i = 0, j = 0;
-    vector<pair<int, double>> ans;
+    vector<ListNode> ans;
     while (i < n || j < m) {
         if (j == m) {  // 仅在body 中出现
-            ans.push_back({vBody[i].first, gBody * vBody[i].second});
+            ans.push_back({vBody[i].fileId, gBody * vBody[i].weight});
             i++;
         } else if (i == n) {  // 仅在title 中出现
-            ans.push_back({vTitle[j].first, gTitle * vTitle[j].second});
+            ans.push_back({vTitle[j].fileId, gTitle * vTitle[j].weight});
             j++;
-        } else if (vBody[i].first == vTitle[j].first) {  // title + body 中出现
-            ans.push_back({vBody[i].first, gBody * vBody[i].second +
-                                               gTitle * vTitle[j].second});
+        } else if (vBody[i].fileId ==
+                   vTitle[j].fileId) {  // title + body 中出现
+            ans.push_back({vBody[i].fileId, gBody * vBody[i].weight +
+                                                gTitle * vTitle[j].weight});
             i++;
             j++;
-        } else if (vBody[i].first < vBody[j].first) {  // 仅在body 中出现
-            ans.push_back({vBody[i].first, gBody * vBody[i].second});
+        } else if (vBody[i].fileId < vBody[j].fileId) {  // 仅在body 中出现
+            ans.push_back({vBody[i].fileId, gBody * vBody[i].weight});
             i++;
         } else {  // 仅在title 中出现
-            ans.push_back({vTitle[j].first, gTitle * vTitle[j].second});
+            ans.push_back({vTitle[j].fileId, gTitle * vTitle[j].weight});
             j++;
         }
     }
 
-    // 按权值从大到小排序
-    auto cmp = [&](const pair<int, double>& a,
-                   const pair<int, double>& b) -> bool {
-        if (a.second == b.second) return a.first < b.first;
-        return a.second > b.second;
-    };
-
-    sort(ans.begin(), ans.end(), cmp);
+    sort(ans.begin(), ans.end());
     return ans;
 }
 
 PostingList* InvertedIndex::intersect2(PostingList* a, PostingList* b) {
-    ListNode* pa = a ? a->head : nullptr;
-    ListNode* pb = b ? b->head : nullptr;
+    auto va = a->vlist, vb = b->vlist;
+    int pa = 0, pb = 0;
 
     PostingList* ans = new PostingList;
     // pa 和 pb 只要都不为空就可以取交集
-    while (pa && pb) {
-        if (pa->fileId == pb->fileId) {  // 文件 id 相同，加入交集
-            ans->insert(new ListNode(pa->fileId, pa->weight + pb->weight,
-                                     pa->freq + pb->freq));
-            pa = pa->nxt;
-            pb = pb->nxt;
-        } else if (pa->fileId <
-                   pb->fileId) {  // 文件 id 不同，不加入交集，pa 移动
-            pa = pa->nxt;
+    while (pa < va.size() && pb < vb.size()) {
+        if (va[pa].fileId == vb[pb].fileId) {  // 文件 id 相同，加入交集
+            ans->insert(ListNode(va[pa].fileId, va[pa].weight + vb[pb].weight,
+                                 va[pa].freq + vb[pb].freq));
+            pa++, pb++;
+        } else if (va[pa].fileId <
+                   vb[pb].fileId) {  // 文件 id 不同，不加入交集，pa 移动
+            pa++;
         } else {  // 文件 id 不同，不加入交集，pb 移动
-            pb = pb->nxt;
+            pb++;
         }
     }
     return ans;
 }
 
-vector<pair<int, double>> InvertedIndex::intersectMulti(
-    vector<PostingList*>& queries) {
+vector<ListNode> InvertedIndex::intersectMulti(vector<PostingList*>& queries) {
     if (!queries.size()) return {};
     // 有一个空则交集为空
     for (auto& p : queries)
@@ -253,13 +243,15 @@ vector<pair<int, double>> InvertedIndex::intersectMulti(
         resultList = intersect2(resultList, queries[i]);
         if (tmp != queries[0]) delete tmp;
     }
-    auto ans = resultList->toVector();
+
+    resultList->sort();
+    auto ans = resultList->vlist;
     if (resultList != queries[0]) delete resultList;
     return ans;
 }
 
-vector<pair<int, double>> InvertedIndex::intersectMulti(vector<string> queries,
-                                                        string type) {
+vector<ListNode> InvertedIndex::intersectMulti(vector<string> queries,
+                                               string type) {
     if (type != "body" && type != "title") return {};
     vector<PostingList*> vPL;
     for (auto& c : queries) {
@@ -271,36 +263,36 @@ vector<pair<int, double>> InvertedIndex::intersectMulti(vector<string> queries,
 }
 
 PostingList* InvertedIndex::union2(PostingList* a, PostingList* b) {
-    auto pa = a->head;
-    auto pb = b->head;
+    auto va = a->vlist, vb = b->vlist;
+    int pa = 0, pb = 0;
 
     PostingList* ans = new PostingList;
     // pa 和 pb 只要有一个不为空就可以取并
-    while (pa || pb) {
-        if (!pa) {
-            ans->insert(new ListNode(pb->fileId, pb->weight, pb->freq));
-            pb = pb->nxt;
-        } else if (!pb) {
-            ans->insert(new ListNode(pa->fileId, pa->weight, pa->freq));
-            pa = pa->nxt;
-        } else if (pa->fileId == pb->fileId) {  // 文件 id 相同，取 1 个加入并集
-            ans->insert(new ListNode(pa->fileId, pa->weight + pb->weight,
-                                     pa->freq + pb->freq));
-            pa = pa->nxt;
-            pb = pb->nxt;
-        } else if (pa->fileId < pb->fileId) {  // pa 的文件 id 小，加入并集
-            ans->insert(new ListNode(pa->fileId, pa->weight, pa->freq));
-            pa = pa->nxt;
+    while (pa < va.size() || pb < vb.size()) {
+        if (pa == va.size()) {
+            ans->insert(ListNode(vb[pb].fileId, vb[pb].weight, vb[pb].freq));
+            pb++;
+        } else if (pb == vb.size()) {
+            ans->insert(ListNode(va[pa].fileId, va[pa].weight, va[pa].freq));
+            pa++;
+        } else if (va[pa].fileId ==
+                   vb[pb].fileId) {  // 文件 id 相同，取 1 个加入并集
+            ans->insert(ListNode(va[pa].fileId, va[pa].weight + vb[pb].weight,
+                                 va[pa].freq + vb[pb].freq));
+            pa++, pb++;
+        } else if (va[pa].fileId <
+                   vb[pb].fileId) {  // pa 的文件 id 小，加入并集
+            ans->insert(ListNode(va[pa].fileId, va[pa].weight, va[pa].freq));
+            pa++;
         } else {  // pb 的文件 id 小，加入并集
-            ans->insert(new ListNode(pb->fileId, pb->weight, pb->freq));
-            pb = pb->nxt;
+            ans->insert(ListNode(vb[pb].fileId, vb[pb].weight, vb[pb].freq));
+            pb++;
         }
     }
     return ans;
 }
 
-vector<pair<int, double>> InvertedIndex::unionMulti(
-    vector<PostingList*>& queries) {
+vector<ListNode> InvertedIndex::unionMulti(vector<PostingList*>& queries) {
     if (!queries.size()) return {};
 #define piip tuple<int, int, PostingList*>
     // 长度，是否是原本存在的 List，List 指针
@@ -323,13 +315,15 @@ vector<pair<int, double>> InvertedIndex::unionMulti(
         if (!get<1>(tp2)) delete get<2>(tp2);
     }
     auto resultList = get<2>(q.top());
-    auto ans = resultList->toVector();
+
+    resultList->sort();
+    auto ans = resultList->vlist;
     if (!get<1>(q.top())) delete resultList;
     return ans;
 }
 
-vector<pair<int, double>> InvertedIndex::unionMulti(vector<string> queries,
-                                                    string type) {
+vector<ListNode> InvertedIndex::unionMulti(vector<string> queries,
+                                           string type) {
     if (type != "body" && type != "title") return {};
     vector<PostingList*> vPL;
     for (auto& c : queries) {
@@ -339,35 +333,41 @@ vector<pair<int, double>> InvertedIndex::unionMulti(vector<string> queries,
     return unionMulti(vPL);
 }
 
-vector<pair<int, double>> InvertedIndex::minus2(PostingList* a,
-                                                PostingList* b) {
-    ListNode* pa = a ? a->head : nullptr;
-    ListNode* pb = b ? b->head : nullptr;
+vector<ListNode> InvertedIndex::minus2(PostingList* a, PostingList* b) {
+    if (!a) return {};
+    if (!b) return a->vlist;
+
+    auto va = a->vlist, vb = b->vlist;
+    int pa = 0, pb = 0;
 
     PostingList* resultList = new PostingList;
     // pa 不为空才做差
-    while (pa) {
-        if (!pb) {
-            resultList->insert(new ListNode(pa->fileId, pa->weight, pa->freq));
-            pa = pa->nxt;
-        } else if (pa->fileId == pb->fileId) {  // 文件 id 相同，不在差集中
-            pa = pa->nxt;
-            pb = pb->nxt;
-        } else if (pa->fileId < pb->fileId) {  // pa 的文件 id 小，加入差集
-            resultList->insert(new ListNode(pa->fileId, pa->weight, pa->freq));
-            pa = pa->nxt;
+    while (pa < va.size()) {
+        if (pb == vb.size()) {
+            resultList->insert(
+                ListNode(va[pa].fileId, va[pa].weight, va[pa].freq));
+            pa++;
+        } else if (va[pa].fileId ==
+                   vb[pb].fileId) {  // 文件 id 相同，不在差集中
+            pa++, pb++;
+        } else if (va[pa].fileId <
+                   vb[pb].fileId) {  // pa 的文件 id 小，加入差集
+            resultList->insert(
+                ListNode(va[pa].fileId, va[pa].weight, va[pa].freq));
+            pa++;
         } else {  // pb 的文件 id 小，不影响差集，跳过
-            pb = pb->nxt;
+            pb++;
         }
     }
 
-    auto ans = resultList->toVector();
+    resultList->sort();
+    auto ans = resultList->vlist;
     delete resultList;
     return ans;
 }
 
-vector<pair<int, double>> InvertedIndex::minus2(const string a, const string b,
-                                                string type) {
+vector<ListNode> InvertedIndex::minus2(const string a, const string b,
+                                       string type) {
     if (type != "body" && type != "title") return {};
     return type == "body" ? minus2(dictBody[a], dictBody[b])
                           : minus2(dictTitle[a], dictTitle[b]);
