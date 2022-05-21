@@ -10,128 +10,68 @@ using namespace std;
 
 signed main() {
     InvertedIndex myLexicon;
-    myLexicon.loadFromDataset();
+    // myLexicon.loadFromDataset();
 
     while (1) {
-        string type, s, pos;
+        string s;
+        // 查询类型
 
-        while (type != "and" && type != "or" && type != "andnot") {
-            cout << "请输入查询类型(and / or / andnot)：\n";
-            cin >> type;
+        // cout << "请输入查询位置";
+
+        cout << "请输入查询表达式 (no spaces)：\n";
+        cin >> s;
+
+        string lastopt = "";
+        vector<ListNode> ansBody;
+        vector<string> query;
+        for (int i = 0, round = 0; i <= s.size(); i += 2) {
+            string curopt = s.substr(i, 2);
+            if (i == 0 && (curopt != "an" && curopt != "or")) {
+                cout << "请以 and 或 or 开头！\n";
+                break;
+            }
+            if (curopt == "an" || curopt == "or" || curopt == "no" ||
+                i == s.size()) {
+                if (lastopt != "" && !query.size()) {
+                    cout << "两运算符之间应该有字符！\n";
+                    break;
+                }
+                if (round != 0)
+                    if (lastopt == "an") {
+                        auto vec = myLexicon.intersectMulti(query);
+                        if (round == 1)
+                            ansBody = vec;
+                        else
+                            ansBody = myLexicon.intersect2(ansBody, vec);
+                    } else if (lastopt == "or") {
+                        auto vec = myLexicon.unionMulti(query);
+                        if (round == 1)
+                            ansBody = vec;
+                        else
+                            ansBody = myLexicon.union2(ansBody, vec);
+                    } else if (lastopt == "no") {
+                        if (query.size() > 1) {
+                            cout << "not 后面只能跟一个字符！\n";
+                            break;
+                        }
+                        ansBody = myLexicon.minus2(ansBody, query[0]);
+                    }
+
+                lastopt = curopt;
+                query.clear();
+                if (curopt == "an" || curopt == "no") i++;
+                round++;
+            } else {
+                query.push_back(curopt);
+            }
         }
 
-        if (type == "and") {
-            cout << "请输入查询关键字：\n";
-            cin.ignore();
-            getline(cin, s);
-            vector<string> query;
-            for (int i = 0; i < s.size(); i += 2)
-                query.push_back(s.substr(i, 2));
-
-            while (pos != "title" && pos != "body" && pos != "both") {
-                cout << "请输入查询位置(title / body / both)：\n";
-                cin >> pos;
-            }
-
-            if (pos == "title") {
-                auto v = myLexicon.intersectMulti(query, pos);
-                cout << "满足查询条件的文档 id：\n";
-                if (v.size())
-                    for (auto& node : v)
-                        cout << node.fileId << ": " << node.weight << endl;
-                else
-                    cout << "null";
-                cout << endl;
-            } else if (pos == "body") {
-                auto v = myLexicon.intersectMulti(query, pos);
-                cout << "满足查询条件的文档 id：\n";
-                if (v.size())
-                    for (auto& node : v)
-                        cout << node.fileId << ": " << node.weight << endl;
-                else
-                    cout << "null";
-                cout << endl;
-            } else if (pos == "both") {
-                auto v1 = myLexicon.intersectMulti(query, "body");
-                auto v2 = myLexicon.intersectMulti(query, "title");
-                auto v3 = myLexicon.zoneScore(v1, v2);
-                cout << "满足查询条件的文档 node.fileId & score：\n";
-                if (v3.size())
-                    for (auto& node : v3)
-                        cout << node.fileId << ": " << node.weight << endl;
-                else
-                    cout << "null\n";
-            }
-        } else if (type == "or") {
-            cout << "请输入查询关键字：\n";
-            cin.ignore();
-            getline(cin, s);
-            vector<string> query;
-            for (int i = 0; i < s.size(); i += 2)
-                query.push_back(s.substr(i, 2));
-
-            while (pos != "title" && pos != "body" && pos != "both") {
-                cout << "请输入查询位置(title / body / both)：\n";
-                cin >> pos;
-            }
-
-            if (pos == "title") {
-                auto v = myLexicon.unionMulti(query, pos);
-                cout << "满足查询条件的文档 id：\n";
-                if (v.size())
-                    for (auto& node : v)
-                        cout << node.fileId << ": " << node.weight << endl;
-                else
-                    cout << "null";
-                cout << endl;
-            } else if (pos == "body") {
-                auto v = myLexicon.unionMulti(query, pos);
-                cout << "满足查询条件的文档 id：\n";
-                if (v.size())
-                    for (auto& node : v)
-                        cout << node.fileId << ": " << node.weight << endl;
-                else
-                    cout << "null";
-                cout << endl;
-            } else if (pos == "both") {
-                auto v1 = myLexicon.unionMulti(query, "body");
-                auto v2 = myLexicon.unionMulti(query, "title");
-                auto v3 = myLexicon.zoneScore(v1, v2);
-                cout << "满足查询条件的文档 node.fileId & score：\n";
-                if (v3.size())
-                    for (auto& node : v3)
-                        cout << node.fileId << ": " << node.weight << endl;
-                else
-                    cout << "null\n";
-            }
-        } else if (type == "andnot") {
-            string a, b;
-            cout << "请输入关键字1和关键字2：\n";
-            cout << "关键字1: ";
-            cin >> a;
-            cout << "关键字2: ";
-            cin >> b;
-
-            while (pos != "title" && pos != "body") {
-                cout << "请输入查询位置(title / body)：\n";
-                cin >> pos;
-            }
-            auto v = myLexicon.minus2(a, b, pos);
-
-            cout << "满足查询条件的文档 id：\n";
-            if (v.size())
-                for (auto& node : v) cout << node.fileId << ": " << node.weight << endl;
-            else
-                cout << "null";
-            cout << endl;
+        string check;
+        while (check != "y" && check != "n") {
+            cout << "是否继续查询（y/n）？\n";
+            cin >> check;
         }
-
-        string opt;
-        while (opt != "yes" && opt != "no") {
-            cout << "继续查询(yes / no)？\n";
-            cin >> opt;
-        }
-        if (opt == "no") break;
+        if (check == "n") break;
     }
     return 0;
 }

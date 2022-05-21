@@ -24,7 +24,7 @@ class InvertedIndex {
     // database 中文档总数
     static int n;
 
-   private:
+   public:
     /**
      * @param a PostingList 1
      * @param b PostingList 2
@@ -97,6 +97,8 @@ class InvertedIndex {
      */
     vector<ListNode> minus2(const string a, const string b,
                             string type = "body");
+
+    vector<ListNode> minus2(vector<ListNode> a, string b, string type = "body");
 };
 double InvertedIndex::gBody = 0.7;
 double InvertedIndex::gTitle = 0.3;
@@ -202,7 +204,6 @@ vector<ListNode> InvertedIndex::zoneScore(const vector<ListNode>& vBody,
             j++;
         }
     }
-    sort(ans.begin(), ans.end());
     return ans;
 }
 
@@ -243,7 +244,6 @@ vector<ListNode> InvertedIndex::intersectMulti(
     for (int i = 1; i < queries.size(); i++)
         resultList = intersect2(resultList, queries[i]);
 
-    sort(resultList.begin(), resultList.end());
     return resultList;
 }
 
@@ -314,7 +314,6 @@ vector<ListNode> InvertedIndex::unionMulti(vector<vector<ListNode>>& queries) {
     }
     auto resultList = get<2>(q.top());
 
-    sort(resultList.begin(), resultList.end());
     return resultList;
 }
 
@@ -353,7 +352,6 @@ vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, vector<ListNode> b) {
         }
     }
 
-    sort(resultList.begin(), resultList.end());
     return resultList;
 }
 
@@ -366,4 +364,13 @@ vector<ListNode> InvertedIndex::minus2(const string a, const string b,
                : minus2(
                      dictTitle[a] ? dictTitle[a]->vlist : vector<ListNode>(),
                      dictTitle[b] ? dictTitle[b]->vlist : vector<ListNode>());
+}
+
+vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, string b,
+                                       string type) {
+    if (type != "body" && type != "title") return {};
+    return type == "body" ? minus2(a, dictBody[b] ? dictBody[b]->vlist
+                                                  : vector<ListNode>())
+                          : minus2(a, dictTitle[b] ? dictTitle[b]->vlist
+                                                   : vector<ListNode>());
 }
