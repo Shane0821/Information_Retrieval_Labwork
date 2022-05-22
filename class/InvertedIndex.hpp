@@ -452,6 +452,25 @@ void InvertedIndex::boolQuery(string s) {
         }
     }
 
-    for (auto& node : ansBody) cout << node.fileId << " ";
+    string qtype = "";
+    cout << "ÇëÊäÈë²éÑ¯Î»ÖÃ(body / title / both): \n";
+    while (qtype != "title" && qtype != "body" && qtype != "both") {
+        cin >> qtype;
+    }
+
+    if (qtype == "title") {
+        sort(ansTitle.begin(), ansTitle.end());
+        for (auto& node : ansTitle)
+            cout << node.fileId << ": " << node.tf_idf << endl;
+    } else if (qtype == "body") {
+        sort(ansBody.begin(), ansBody.end());
+        for (auto& node : ansBody)
+            cout << node.fileId << ": " << node.tf_idf << endl;
+    } else {
+        auto res = zoneScore(ansBody, ansTitle);
+        sort(res.begin(), res.end());
+        for (auto& node : res)
+            cout << node.fileId << ": " << node.tf_idf << endl;
+    }
     cout << endl;
 }

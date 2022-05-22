@@ -25,7 +25,7 @@ class ListNode {
     friend bool operator<(const ListNode& a, const ListNode& b);
 };
 
-ListNode::ListNode(const int& fileId, const double tf_idf, const int fre0, const int wf) {
+ListNode::ListNode(const int& fileId, const double tf_idf, const int freq, const int wf) {
     this->fileId = fileId;
     this->freq = freq;
     this->tf_idf = tf_idf;
