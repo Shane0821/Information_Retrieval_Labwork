@@ -16,7 +16,7 @@ class PostingList {
     int cntFile;
     // 总词频
     int totalFreq;
-    //
+    // 逆文档频率
     double idf;
 
    public:
@@ -58,7 +58,7 @@ void PostingList::insert(const ListNode x) {
 
 void PostingList::initWeight(const int& n) {
     idf = log10(1.0 * n / cntFile);
-    for (auto& node : vlist) node.weight = idf * node.freq;
+    for (auto& node : vlist) node.tf_idf = idf * node.freq;
 }
 
 void PostingList::sort() { std::sort(vlist.begin(), vlist.end()); }

@@ -9,6 +9,7 @@ using namespace std;
 /**
  * encoding: GBK
  */
+const static int n = 265;
 
 class InvertedIndex {
    public:
@@ -22,9 +23,11 @@ class InvertedIndex {
     // 内容权重
     static double gBody;
     // database 中文档总数
-    static int n;
 
-   public:
+    // 各个文件内容的长度
+    int contentLength[n + 1];
+
+   private:
     /**
      * @param a PostingList 1
      * @param b PostingList 2
@@ -57,14 +60,6 @@ class InvertedIndex {
      * @return fileId 差集
      */
     vector<ListNode> minus2(vector<ListNode> a, vector<ListNode> b);
-
-   public:
-    // 构造函数
-    InvertedIndex() = default;
-    // 析构函数
-    ~InvertedIndex();
-    // 加载数据
-    void loadFromDataset();
 
     /**
      * @param a body 中查询得到的 fileId 集合
@@ -99,21 +94,34 @@ class InvertedIndex {
                             string type = "body");
 
     vector<ListNode> minus2(vector<ListNode> a, string b, string type = "body");
+
+   public:
+    // 构造函数
+    InvertedIndex() = default;
+    // 析构函数
+    ~InvertedIndex();
+    // 加载数据
+    void loadFromDataset();
+
+    // 向量查询
+    void vectorQuery(string s);
+    // 布尔查询
+    void boolQuery(string s);
 };
 double InvertedIndex::gBody = 0.7;
 double InvertedIndex::gTitle = 0.3;
-int InvertedIndex::n = 265;
 
 InvertedIndex::~InvertedIndex() {
     for (auto& p : dictBody) delete p.second;
 }
 
 void InvertedIndex::loadFromDataset() {
-    for (int i = 1; i <= n; i++) {
+    for (int d = 1; d <= n; d++) {
+        contentLength[d] = 0;
         // generate file name
         stringstream ss;
 
-        ss << "./dataset/" << i << ".txt";
+        ss << "./dataset/" << d << ".txt";
         string filename = ss.str();
 
         // load data from file
@@ -131,6 +139,7 @@ void InvertedIndex::loadFromDataset() {
 
         // caculate freq of each char in body
         unordered_map<string, int> freqBody;
+        int maxFreqBody = 0;
         for (int i = 0; i < content.size(); i += 2) {
             auto lex = content.substr(i, 2);
             if (lex == "。" || lex == "，" || lex == "：" || lex == "；" ||
@@ -138,6 +147,8 @@ void InvertedIndex::loadFromDataset() {
                 lex == "”" || lex == "“" || lex == "\n" || lex == " ")
                 continue;
             freqBody[lex]++;
+            maxFreqBody = max(maxFreqBody, freqBody[lex]);
+            contentLength[d]++;
         }
         // append to dictBody
         for (auto& pii : freqBody) {
@@ -145,11 +156,13 @@ void InvertedIndex::loadFromDataset() {
             // 索引指向一个 PostingList
             if (!dictBody[pii.first]) dictBody[pii.first] = new PostingList;
             // PostingList 中插入节点
-            dictBody[pii.first]->insert(ListNode(i, 0, pii.second));
+            dictBody[pii.first]->insert(
+                ListNode(d, 0, pii.second, 1.0 * pii.second / maxFreqBody));
         }
 
         // caculate freq of each char in title
         unordered_map<string, int> freqTitle;
+        int maxFreqTitle = 0;
         for (int i = 0; i < title.size(); i += 2) {
             auto lex = title.substr(i, 2);
             if (lex == "。" || lex == "，" || lex == "：" || lex == "；" ||
@@ -157,6 +170,7 @@ void InvertedIndex::loadFromDataset() {
                 lex == "”" || lex == "“" || lex == "\n" || lex == " ")
                 continue;
             freqTitle[lex]++;
+            maxFreqTitle = max(maxFreqTitle, freqTitle[lex]);
         }
         // append to dictTitle
         for (auto& pii : freqTitle) {
@@ -164,7 +178,8 @@ void InvertedIndex::loadFromDataset() {
             // 索引指向一个 PostingList
             if (!dictTitle[pii.first]) dictTitle[pii.first] = new PostingList;
             // PostingList 中插入节点
-            dictTitle[pii.first]->insert(ListNode(i, 0, pii.second));
+            dictTitle[pii.first]->insert(
+                ListNode(d, 0, pii.second, 1.0 * pii.second / maxFreqTitle));
         }
     }
     cout << "Dataset loaded successfully!\n";
@@ -182,25 +197,25 @@ vector<ListNode> InvertedIndex::zoneScore(const vector<ListNode>& vBody,
     vector<ListNode> ans;
     while (i < n || j < m) {
         if (j == m) {  // 仅在body 中出现
-            ans.push_back(ListNode(vBody[i].fileId, gBody * vBody[i].weight));
+            ans.push_back(ListNode(vBody[i].fileId, gBody * vBody[i].tf_idf));
             i++;
         } else if (i == n) {  // 仅在title 中出现
             ans.push_back(
-                ListNode(vTitle[j].fileId, gTitle * vTitle[j].weight));
+                ListNode(vTitle[j].fileId, gTitle * vTitle[j].tf_idf));
             j++;
         } else if (vBody[i].fileId ==
                    vTitle[j].fileId) {  // title + body 中出现
             ans.push_back(
                 ListNode(vBody[i].fileId,
-                         gBody * vBody[i].weight + gTitle * vTitle[j].weight));
+                         gBody * vBody[i].tf_idf + gTitle * vTitle[j].tf_idf));
             i++;
             j++;
         } else if (vBody[i].fileId < vBody[j].fileId) {  // 仅在body 中出现
-            ans.push_back(ListNode(vBody[i].fileId, gBody * vBody[i].weight));
+            ans.push_back(ListNode(vBody[i].fileId, gBody * vBody[i].tf_idf));
             i++;
         } else {  // 仅在title 中出现
             ans.push_back(
-                ListNode(vTitle[j].fileId, gTitle * vTitle[j].weight));
+                ListNode(vTitle[j].fileId, gTitle * vTitle[j].tf_idf));
             j++;
         }
     }
@@ -215,8 +230,7 @@ vector<ListNode> InvertedIndex::intersect2(vector<ListNode>& a,
     // pa 和 pb 只要都不为空就可以取交集
     while (pa < a.size() && pb < b.size()) {
         if (a[pa].fileId == b[pb].fileId) {  // 文件 id 相同，加入交集
-            ans.push_back(ListNode(a[pa].fileId, a[pa].weight + b[pb].weight,
-                                   a[pa].freq + b[pb].freq));
+            ans.push_back(ListNode(a[pa].fileId, a[pa].tf_idf + b[pb].tf_idf));
             pa++, pb++;
         } else if (a[pa].fileId <
                    b[pb].fileId) {  // 文件 id 不同，不加入交集，pa 移动
@@ -273,21 +287,20 @@ vector<ListNode> InvertedIndex::union2(vector<ListNode>& a,
     // pa 和 pb 只要有一个不为空就可以取并
     while (pa < a.size() || pb < b.size()) {
         if (pa == a.size()) {
-            ans.push_back(ListNode(b[pb].fileId, b[pb].weight, b[pb].freq));
+            ans.push_back(ListNode(b[pb].fileId, b[pb].tf_idf));
             pb++;
         } else if (pb == b.size()) {
-            ans.push_back(ListNode(a[pa].fileId, a[pa].weight, a[pa].freq));
+            ans.push_back(ListNode(a[pa].fileId, a[pa].tf_idf));
             pa++;
         } else if (a[pa].fileId ==
                    b[pb].fileId) {  // 文件 id 相同，取 1 个加入并集
-            ans.push_back(ListNode(a[pa].fileId, a[pa].weight + b[pb].weight,
-                                   a[pa].freq + b[pb].freq));
+            ans.push_back(ListNode(a[pa].fileId, a[pa].tf_idf + b[pb].tf_idf));
             pa++, pb++;
         } else if (a[pa].fileId < b[pb].fileId) {  // pa 的文件 id 小，加入并集
-            ans.push_back(ListNode(a[pa].fileId, a[pa].weight, a[pa].freq));
+            ans.push_back(ListNode(a[pa].fileId, a[pa].tf_idf));
             pa++;
         } else {  // pb 的文件 id 小，加入并集
-            ans.push_back(ListNode(b[pb].fileId, b[pb].weight, b[pb].freq));
+            ans.push_back(ListNode(b[pb].fileId, b[pb].tf_idf));
             pb++;
         }
     }
@@ -339,13 +352,13 @@ vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, vector<ListNode> b) {
     while (pa < a.size()) {
         if (pb == b.size()) {
             resultList.push_back(
-                ListNode(a[pa].fileId, a[pa].weight, a[pa].freq));
+                ListNode(a[pa].fileId, a[pa].tf_idf, a[pa].freq));
             pa++;
         } else if (a[pa].fileId == b[pb].fileId) {  // 文件 id 相同，不在差集中
             pa++, pb++;
         } else if (a[pa].fileId < b[pb].fileId) {  // pa 的文件 id 小，加入差集
             resultList.push_back(
-                ListNode(a[pa].fileId, a[pa].weight, a[pa].freq));
+                ListNode(a[pa].fileId, a[pa].tf_idf, a[pa].freq));
             pa++;
         } else {  // pb 的文件 id 小，不影响差集，跳过
             pb++;
@@ -373,4 +386,72 @@ vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, string b,
                                                   : vector<ListNode>())
                           : minus2(a, dictTitle[b] ? dictTitle[b]->vlist
                                                    : vector<ListNode>());
+}
+
+void InvertedIndex::vectorQuery(string s) {}
+
+void InvertedIndex::boolQuery(string s) {
+    string lastopt = "";
+    vector<ListNode> ansBody;
+    vector<ListNode> ansTitle;
+    vector<string> query;
+    for (int i = 0, round = 0; i <= s.size(); i += 2) {
+        string curopt = s.substr(i, 2);
+        if (curopt == " ") {
+            cout << "不要有空格！\n";
+            break;
+        }
+        // 开头为 and 或 or
+        if (i == 0 && (curopt != "an" && curopt != "or")) {
+            cout << "请以 and 或 or 开头！\n";
+            break;
+        }
+        // 碰到运算符，或者结尾，把之前的字符进行运算加入答案
+        if (curopt == "an" || curopt == "or" || curopt == "no" ||
+            i == s.size()) {
+            if (lastopt != "" && !query.size()) {
+                cout << "两运算符之间应该有字符！\n";
+                break;
+            }
+            if (round != 0)
+                if (lastopt == "an") {
+                    auto vec = intersectMulti(query);
+                    auto vec2 = intersectMulti(query, "title");
+                    if (round == 1) {
+                        ansBody = vec;
+                        ansTitle = vec2;
+                    } else {
+                        ansBody = intersect2(ansBody, vec);
+                        ansTitle = intersect2(ansTitle, vec2);
+                    }
+                } else if (lastopt == "or") {
+                    auto vec = unionMulti(query);
+                    auto vec2 = unionMulti(query, "title");
+                    if (round == 1) {
+                        ansBody = vec;
+                        ansTitle = vec2;
+                    } else {
+                        ansBody = union2(ansBody, vec);
+                        ansTitle = union2(ansTitle, vec2);
+                    }
+                } else if (lastopt == "no") {
+                    if (query.size() > 1) {
+                        cout << "not 后面只能跟一个字符！\n";
+                        break;
+                    }
+                    ansBody = minus2(ansBody, query[0]);
+                    ansTitle = minus2(ansTitle, query[0], "title");
+                }
+
+            lastopt = curopt;
+            query.clear();
+            if (curopt == "an" || curopt == "no") i++;
+            round++;
+        } else {
+            query.push_back(curopt);
+        }
+    }
+
+    for (auto& node : ansBody) cout << node.fileId << " ";
+    cout << endl;
 }
