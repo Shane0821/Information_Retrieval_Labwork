@@ -102,6 +102,12 @@ class InvertedIndex {
      */
     vector<ListNode> minus2(vector<ListNode> a, string b, string type = "body");
 
+    /**
+     * @param
+     * @return
+     */
+    vector<double> fastCosineScore(vector<string> query);
+
    public:
     // 构造函数
     InvertedIndex() = default;
@@ -398,10 +404,40 @@ vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, string b,
                                                    : vector<ListNode>());
 }
 
+vector<double> InvertedIndex::fastCosineScore(vector<string> query) {
+    vector<double> ans(n + 1);
+    for (auto& s : query) {
+        for (auto& node : dictBody[s]->vlist) {
+            ans[node.fileId] += node.wf;
+        }
+    }
+    for (int i = 1; i <= n; i++) {
+        assert(contentLength[i] != 0);
+        ans[i] /= contentLength[i];
+    }
+    return ans;
+}
+
 void InvertedIndex::vectorQuery(string s) {
-    
+    vector<string> query;
+    for (int i = 0; i < s.size(); i++) {
+        auto tmp = s.substr(i, 2);
+        if (dictBody[tmp]) query.push_back(tmp);
+    }
+    auto score = fastCosineScore(query);
 
+    priority_queue<pair<double, int>, vector<pair<double, int>>,
+                   greater<pair<double, int>>>
+        q;
+    const static int K = 10;
+    for (int i = 1; i <= n; i++) q.push({score[i], i});
 
+    cout << "查询结果：\n";
+    for (int i = 1; i <= K; i++) {
+        auto tp = q.top();
+        q.pop();
+        cout << tp.second << ": " << tp.first << endl;
+    }
 }
 
 void InvertedIndex::boolQuery(string s) {
@@ -467,24 +503,39 @@ void InvertedIndex::boolQuery(string s) {
     }
 
     string qtype = "";
-    cout << "请输入查询位置(body / title / both): \n";
+    cout << "请输入查询位置（body/title/both）: \n";
     while (qtype != "title" && qtype != "body" && qtype != "both") {
         cin >> qtype;
     }
 
+    cout << "查询结果：\n";
     if (qtype == "title") {
-        sort(ansTitle.begin(), ansTitle.end());
-        for (auto& node : ansTitle)
-            cout << node.fileId << ": " << node.tf_idf << endl;
+        if (!ansTitle.size()) {
+            cout << "null\n";
+        } else {
+            sort(ansTitle.begin(), ansTitle.end());
+            for (auto& node : ansTitle)
+                cout << node.fileId << ": " << node.tf_idf << endl;
+        }
+
     } else if (qtype == "body") {
-        sort(ansBody.begin(), ansBody.end());
-        for (auto& node : ansBody)
-            cout << node.fileId << ": " << node.tf_idf << endl;
+        if (!ansBody.size()) {
+            cout << "null\n";
+        } else {
+            sort(ansBody.begin(), ansBody.end());
+            for (auto& node : ansBody)
+                cout << node.fileId << ": " << node.tf_idf << endl;
+        }
+
     } else {
         auto res = zoneScore(ansBody, ansTitle, 0);
-        sort(res.begin(), res.end());
-        for (auto& node : res)
-            cout << node.fileId << ": " << node.tf_idf << endl;
+        if (!res.size()) {
+            cout << "null\n";
+        } else {
+            sort(res.begin(), res.end());
+            for (auto& node : res)
+                cout << node.fileId << ": " << node.tf_idf << endl;
+        }
     }
     cout << endl;
 }
