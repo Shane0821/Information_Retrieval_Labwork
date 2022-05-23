@@ -9,6 +9,8 @@ using namespace std;
 /**
  * encoding: GBK
  */
+
+// 文档总数
 const static int n = 265;
 
 class InvertedIndex {
@@ -22,57 +24,56 @@ class InvertedIndex {
     static double gTitle;
     // 内容权重
     static double gBody;
-    // database 中文档总数
-
     // 各个文件内容的长度
     int contentLength[n + 1];
 
    private:
     /**
-     * @param a PostingList 1
-     * @param b PostingList 2
-     * @return PostingList1 与 PostingList2 的交集
+     * @param a 文档向量1
+     * @param b 文档向量2
+     * @return 文档向量1与文档向量2的交集
      */
     vector<ListNode> intersect2(vector<ListNode>& a, vector<ListNode>& b);
 
     /**
-     * @param queries 查询 PostingList 集合
-     * @return fileId 交集
+     * @param queries 查询文档向量集合
+     * @return 文档向量交集
      */
     vector<ListNode> intersectMulti(vector<vector<ListNode>>& queries);
 
     /**
-     * @param a PostingList 1
-     * @param b PostingList 2
-     * @return PostingList1 与 PostingList2 的并集
+     * @param a 文档向量1
+     * @param b 文档向量2
+     * @return 文档向量1与文档向量2的并集
      */
     vector<ListNode> union2(vector<ListNode>& a, vector<ListNode>& b);
 
     /**
-     * @param queries 查询 PostingList 集合
-     * @return fileId 并集
+     * @param queries 查询文档向量集合
+     * @return 文档向量并集
      */
     vector<ListNode> unionMulti(vector<vector<ListNode>>& queries);
 
     /**
-     * @param a 关键字 1
-     * @param b 关键字 2
-     * @return fileId 差集
+     * @param a 文档向量1
+     * @param b 文档向量2
+     * @return 文档向量差集
      */
     vector<ListNode> minus2(vector<ListNode> a, vector<ListNode> b);
 
     /**
-     * @param a body 中查询得到的 fileId 集合
-     * @param b title 中查询得到的 fileId 集合
-     * @return 两个 fileId 集合的加权合并
+     * @param a body 中查询得到的文档向量
+     * @param b title 中查询得到的文档向量
+     * @param type type=0 表示不带权，type=1 表示带权
+     * @return 两个文档向量的加权合并
      */
     vector<ListNode> zoneScore(const vector<ListNode>& vBody,
-                               const vector<ListNode>& vTitle);
+                               const vector<ListNode>& vTitle, bool type = 0);
 
     /**
      * @param queries 查询字符集合
      * @param type 查询区域
-     * @return fileId 交集
+     * @return 文档向量交集
      */
     vector<ListNode> intersectMulti(vector<string>& queries,
                                     string type = "body");
@@ -80,19 +81,25 @@ class InvertedIndex {
     /**
      * @param queries 查询字符集合
      * @param type 查询区域
-     * @return fileId 并集
+     * @return 文档向量并集
      */
     vector<ListNode> unionMulti(vector<string>& queries, string type = "body");
 
     /**
-     * @param a 查询字符 1
-     * @param b 查询字符 2
+     * @param a 查询字符1
+     * @param b 查询字符2
      * @param type 查询区域
-     * @return fileId 差集
+     * @return 文档向量差集
      */
     vector<ListNode> minus2(const string a, const string b,
                             string type = "body");
 
+    /**
+     * @param a 文档向量
+     * @param b 查询字符
+     * @param type 查询区域
+     * @return 文档向量差集
+     */
     vector<ListNode> minus2(vector<ListNode> a, string b, string type = "body");
 
    public:
@@ -191,31 +198,34 @@ void InvertedIndex::loadFromDataset() {
 }
 
 vector<ListNode> InvertedIndex::zoneScore(const vector<ListNode>& vBody,
-                                          const vector<ListNode>& vTitle) {
+                                          const vector<ListNode>& vTitle,
+                                          bool type) {
     int n = vBody.size(), m = vTitle.size();
     int i = 0, j = 0;
     vector<ListNode> ans;
     while (i < n || j < m) {
         if (j == m) {  // 仅在body 中出现
-            ans.push_back(ListNode(vBody[i].fileId, gBody * vBody[i].tf_idf));
+            ans.push_back(ListNode(vBody[i].fileId,
+                                   gBody * (type ? vBody[i].tf_idf : 1)));
             i++;
         } else if (i == n) {  // 仅在title 中出现
-            ans.push_back(
-                ListNode(vTitle[j].fileId, gTitle * vTitle[j].tf_idf));
+            ans.push_back(ListNode(vTitle[j].fileId,
+                                   gTitle * (type ? vTitle[j].tf_idf : 1)));
             j++;
         } else if (vBody[i].fileId ==
                    vTitle[j].fileId) {  // title + body 中出现
-            ans.push_back(
-                ListNode(vBody[i].fileId,
-                         gBody * vBody[i].tf_idf + gTitle * vTitle[j].tf_idf));
+            ans.push_back(ListNode(vBody[i].fileId,
+                                   gBody * (type ? vBody[i].tf_idf : 1) +
+                                       gTitle * (type ? vTitle[j].tf_idf : 1)));
             i++;
             j++;
         } else if (vBody[i].fileId < vBody[j].fileId) {  // 仅在body 中出现
-            ans.push_back(ListNode(vBody[i].fileId, gBody * vBody[i].tf_idf));
+            ans.push_back(ListNode(vBody[i].fileId,
+                                   gBody * (type ? vBody[i].tf_idf : 1)));
             i++;
         } else {  // 仅在title 中出现
-            ans.push_back(
-                ListNode(vTitle[j].fileId, gTitle * vTitle[j].tf_idf));
+            ans.push_back(ListNode(vTitle[j].fileId,
+                                   gTitle * (type ? vTitle[j].tf_idf : 1)));
             j++;
         }
     }
@@ -388,7 +398,11 @@ vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, string b,
                                                    : vector<ListNode>());
 }
 
-void InvertedIndex::vectorQuery(string s) {}
+void InvertedIndex::vectorQuery(string s) {
+    
+
+
+}
 
 void InvertedIndex::boolQuery(string s) {
     string lastopt = "";
@@ -467,7 +481,7 @@ void InvertedIndex::boolQuery(string s) {
         for (auto& node : ansBody)
             cout << node.fileId << ": " << node.tf_idf << endl;
     } else {
-        auto res = zoneScore(ansBody, ansTitle);
+        auto res = zoneScore(ansBody, ansTitle, 0);
         sort(res.begin(), res.end());
         for (auto& node : res)
             cout << node.fileId << ": " << node.tf_idf << endl;
