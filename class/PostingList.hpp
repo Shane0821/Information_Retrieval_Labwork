@@ -12,6 +12,8 @@ class PostingList {
    public:
     // 存储链表节点
     vector<ListNode> vlist;
+    // 按节点 tf 降序排列
+    vector<ListNode> vlist2;
     // 文件总数
     int cntFile;
     // 总词频
@@ -37,8 +39,9 @@ class PostingList {
 
     // 初始化所有节点权重，注意若插入新节点需要重新初始化
     void initWeight(const int& n);
-    // 对 vlist 排序
-    void sort();
+
+    // 对 vlist2 按 tf 从高到低排序
+    void sorList2();
 };
 
 PostingList::PostingList() {
@@ -53,12 +56,22 @@ void PostingList::insert(const ListNode x) {
     // 累加文件数
     cntFile++;
     // 累加词频
-    totalFreq += x.freq;
+    totalFreq += x.tf;
 }
 
 void PostingList::initWeight(const int& n) {
     idf = log10(1.0 * n / cntFile);
-    for (auto& node : vlist) node.tf_idf = idf * node.freq;
+    for (auto& node : vlist) node.tf_idf = idf * node.tf;
 }
 
-void PostingList::sort() { std::sort(vlist.begin(), vlist.end()); }
+void PostingList::sorList2() {
+    vlist2 = vlist;
+
+    auto cmp = [&](const ListNode& a, const ListNode& b) -> bool {
+        return a.tf > b.tf;
+        // return a.fileLen > b.fileLen;
+    };
+
+    std::sort(vlist2.begin(), vlist2.end(), cmp);
+}
+// void PostingList::sort() { std::sort(vlist.begin(), vlist.end()); }

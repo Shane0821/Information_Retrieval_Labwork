@@ -103,10 +103,19 @@ class InvertedIndex {
     vector<ListNode> minus2(vector<ListNode> a, string b, string type = "body");
 
     /**
-     * @param
-     * @return
+     * @param query 查询涉及的 PostingList
+     * @param K 需要返回的文档数
+     * @return 满足要求的文档得分和编号的集合
      */
-    vector<double> fastCosineScore(vector<string> query);
+    vector<pair<double, int>> fastCosineScore(vector<PostingList*> query,
+                                              int K);
+
+    /**
+     * @param query 查询涉及的 PostingList
+     * @param K 需要返回的文档数
+     * @return 满足要求的文档得分和编号的集合
+     */
+    vector<pair<double, int>> heuristicTopK(vector<PostingList*> query, int K);
 
    public:
     // 构造函数
@@ -150,7 +159,7 @@ void InvertedIndex::loadFromDataset() {
         fs >> title >> author >> content;
         fs.close();
 
-        // caculate freq of each char in body
+        // caculate tf of each char in body
         unordered_map<string, int> freqBody;
         int maxFreqBody = 0;
         for (int i = 0; i < content.size(); i += 2) {
@@ -169,13 +178,13 @@ void InvertedIndex::loadFromDataset() {
             // 索引指向一个 PostingList
             if (!dictBody[pii.first]) dictBody[pii.first] = new PostingList;
             // PostingList 中插入节点
-            dictBody[pii.first]->insert(
-                ListNode(d, 0, pii.second, 1.0 * pii.second / maxFreqBody));
+            dictBody[pii.first]->insert(ListNode(d, 0, pii.second,
+                                                 1.0 * pii.second / maxFreqBody,
+                                                 contentLength[d]));
         }
 
-        // caculate freq of each char in title
+        // caculate tf of each char in title
         unordered_map<string, int> freqTitle;
-        int maxFreqTitle = 0;
         for (int i = 0; i < title.size(); i += 2) {
             auto lex = title.substr(i, 2);
             if (lex == "。" || lex == "，" || lex == "：" || lex == "；" ||
@@ -183,7 +192,6 @@ void InvertedIndex::loadFromDataset() {
                 lex == "”" || lex == "“" || lex == "\n" || lex == " ")
                 continue;
             freqTitle[lex]++;
-            maxFreqTitle = max(maxFreqTitle, freqTitle[lex]);
         }
         // append to dictTitle
         for (auto& pii : freqTitle) {
@@ -191,14 +199,14 @@ void InvertedIndex::loadFromDataset() {
             // 索引指向一个 PostingList
             if (!dictTitle[pii.first]) dictTitle[pii.first] = new PostingList;
             // PostingList 中插入节点
-            dictTitle[pii.first]->insert(
-                ListNode(d, 0, pii.second, 1.0 * pii.second / maxFreqTitle));
+            dictTitle[pii.first]->insert(ListNode(d, 0, pii.second));
         }
     }
     cout << "Dataset loaded successfully!\n";
 
     // 初始化文件权重
-    for (auto& p : dictBody) p.second->initWeight(n);
+    for (auto& p : dictBody)
+        p.second->initWeight(n), p.second->sorList2();
     for (auto& p : dictTitle) p.second->initWeight(n);
     cout << "Weight initialized.\n";
 }
@@ -368,13 +376,13 @@ vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, vector<ListNode> b) {
     while (pa < a.size()) {
         if (pb == b.size()) {
             resultList.push_back(
-                ListNode(a[pa].fileId, a[pa].tf_idf, a[pa].freq));
+                ListNode(a[pa].fileId, a[pa].tf_idf, a[pa].tf));
             pa++;
         } else if (a[pa].fileId == b[pb].fileId) {  // 文件 id 相同，不在差集中
             pa++, pb++;
         } else if (a[pa].fileId < b[pb].fileId) {  // pa 的文件 id 小，加入差集
             resultList.push_back(
-                ListNode(a[pa].fileId, a[pa].tf_idf, a[pa].freq));
+                ListNode(a[pa].fileId, a[pa].tf_idf, a[pa].tf));
             pa++;
         } else {  // pb 的文件 id 小，不影响差集，跳过
             pb++;
@@ -404,40 +412,82 @@ vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, string b,
                                                    : vector<ListNode>());
 }
 
-vector<double> InvertedIndex::fastCosineScore(vector<string> query) {
-    vector<double> ans(n + 1);
-    for (auto& s : query) {
-        for (auto& node : dictBody[s]->vlist) {
-            ans[node.fileId] += node.wf;
+vector<pair<double, int>> InvertedIndex::fastCosineScore(
+    vector<PostingList*> query, int K) {
+    vector<double> score(n + 1);
+    for (auto& pList : query) {
+        for (auto& node : pList->vlist) {
+            score[node.fileId] += node.wf;
         }
     }
     for (int i = 1; i <= n; i++) {
         assert(contentLength[i] != 0);
-        ans[i] /= contentLength[i];
+        score[i] /= contentLength[i];
     }
-    return ans;
-}
 
-void InvertedIndex::vectorQuery(string s) {
-    vector<string> query;
-    for (int i = 0; i < s.size(); i++) {
-        auto tmp = s.substr(i, 2);
-        if (dictBody[tmp]) query.push_back(tmp);
-    }
-    auto score = fastCosineScore(query);
+    priority_queue<pair<double, int>> q;
+    for (int i = 1; i <= n; i++) q.push({score[i], -i});
 
-    priority_queue<pair<double, int>, vector<pair<double, int>>,
-                   greater<pair<double, int>>>
-        q;
-    const static int K = 10;
-    for (int i = 1; i <= n; i++) q.push({score[i], i});
-
-    cout << "查询结果：\n";
+    vector<pair<double, int>> res;
     for (int i = 1; i <= K; i++) {
         auto tp = q.top();
         q.pop();
-        cout << tp.second << ": " << tp.first << endl;
+        res.push_back({tp.first, -tp.second});
     }
+
+    return res;
+}
+
+vector<pair<double, int>> InvertedIndex::heuristicTopK(
+    vector<PostingList*> query, int K) {
+    auto cmp = [&](const PostingList* a, const PostingList* b) -> bool {
+        return a->idf > b->idf;
+    };
+    sort(query.begin(), query.end(), cmp);
+
+    vector<double> score(n + 1);
+    const double eps = 0.65;
+    int cnt = 0;
+    for (auto& pList : query) {
+        for (auto& node : pList->vlist2) {
+            if (node.tf_idf < eps) break;
+            cnt++;
+            score[node.fileId] += node.tf_idf;
+        }
+    }
+    cout << cnt << endl;
+
+    for (int i = 1; i <= n; i++) {
+        assert(contentLength[i] != 0);
+        score[i] /= contentLength[i];
+    }
+
+    priority_queue<pair<double, int>> q;
+    for (int i = 1; i <= n; i++) q.push({score[i], -i});
+
+    vector<pair<double, int>> res;
+    for (int i = 1; i <= K; i++) {
+        auto tp = q.top();
+        q.pop();
+        res.push_back({tp.first, -tp.second});
+    }
+
+    return res;
+}
+
+void InvertedIndex::vectorQuery(string s) {
+    vector<PostingList*> query;
+    for (int i = 0; i < s.size(); i++) {
+        auto tmp = s.substr(i, 2);
+        if (dictBody[tmp]) query.push_back(dictBody[tmp]);
+    }
+
+    const int K = 10;
+    // auto res = fastCosineScore(query, K);
+    auto res = heuristicTopK(query, K);
+
+    cout << "查询结果：\n";
+    for (auto& p : res) cout << p.second << ": " << p.first << endl;
 }
 
 void InvertedIndex::boolQuery(string s) {
