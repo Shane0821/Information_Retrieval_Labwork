@@ -446,7 +446,7 @@ vector<pair<double, int>> InvertedIndex::heuristicTopK(
     sort(query.begin(), query.end(), cmp);
 
     vector<double> score(n + 1);
-    const double eps = 0.65;
+    const double eps = 0.1;
     int cnt = 0;
     for (auto& pList : query) {
         for (auto& node : pList->vlist2) {
