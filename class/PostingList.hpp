@@ -42,6 +42,9 @@ class PostingList {
 
     // 对 vlist2 按 tf 从高到低排序
     void sorList2();
+
+    // 找到编号为 d 的文档的词频，若该文档不存在返回 0
+    int getFreqOfDoc(int id);
 };
 
 PostingList::PostingList() {
@@ -75,3 +78,17 @@ void PostingList::sorList2() {
     std::sort(vlist2.begin(), vlist2.end(), cmp);
 }
 // void PostingList::sort() { std::sort(vlist.begin(), vlist.end()); }
+
+int PostingList::getFreqOfDoc(int id) {
+    // 根据 id 二分查找
+    int l = 0, r = (int)vlist.size() - 1;
+    while (l <= r) {
+        int mid = l + r >> 1;
+        if (vlist[mid].fileId == id) return vlist[mid].tf;
+        if (vlist[mid].fileId < id)
+            l = mid + 1;
+        else
+            r = mid - 1;
+    }
+    return 0;
+}

@@ -16,8 +16,9 @@ signed main() {
         string s;
         // 查询类型
         string querytype;
-        while (querytype != "vector" && querytype != "bool") {
-            cout << "请输入查询类型（bool/vector）：\n";
+        while (querytype != "vector" && querytype != "bool" &&
+               querytype != "language") {
+            cout << "请输入查询模型（bool/vector/language）：\n";
             cin >> querytype;
         }
         // cout << "请输入查询位置";
@@ -25,7 +26,12 @@ signed main() {
         cout << "请输入查询表达式（no spaces）：\n";
         cin >> s;
 
-        querytype == "bool" ? myLexicon.boolQuery(s) : myLexicon.vectorQuery(s);
+        if (querytype == "bool")
+            myLexicon.boolQuery(s);
+        else if (querytype == "vector")
+            myLexicon.vectorQuery(s);
+        else
+            myLexicon.languageModel(s);
 
         string check;
         while (check != "y" && check != "n") {

@@ -26,6 +26,8 @@ class InvertedIndex {
     static double gBody;
     // 各个文件内容的长度
     int contentLength[n + 1];
+    // cf 的和
+    static int cs;
 
    private:
     /**
@@ -129,9 +131,12 @@ class InvertedIndex {
     void vectorQuery(string s);
     // 布尔查询
     void boolQuery(string s);
+    // 语言模型
+    void languageModel(string s);
 };
 double InvertedIndex::gBody = 0.7;
 double InvertedIndex::gTitle = 0.3;
+int InvertedIndex::cs = 0;
 
 InvertedIndex::~InvertedIndex() {
     for (auto& p : dictBody) delete p.second;
@@ -180,8 +185,10 @@ void InvertedIndex::loadFromDataset() {
             // PostingList 中插入节点
             dictBody[pii.first]->insert(ListNode(d, 0, pii.second,
                                                  1.0 * pii.second / maxFreqBody,
+
                                                  contentLength[d]));
         }
+        cs += contentLength[d];
 
         // caculate tf of each char in title
         unordered_map<string, int> freqTitle;
@@ -205,8 +212,7 @@ void InvertedIndex::loadFromDataset() {
     cout << "Dataset loaded successfully!\n";
 
     // 初始化文件权重
-    for (auto& p : dictBody)
-        p.second->initWeight(n), p.second->sorList2();
+    for (auto& p : dictBody) p.second->initWeight(n), p.second->sorList2();
     for (auto& p : dictTitle) p.second->initWeight(n);
     cout << "Weight initialized.\n";
 }
@@ -446,7 +452,7 @@ vector<pair<double, int>> InvertedIndex::heuristicTopK(
     sort(query.begin(), query.end(), cmp);
 
     vector<double> score(n + 1);
-    const double eps = 0.1;
+    const double eps = 0.5;
     int cnt = 0;
     for (auto& pList : query) {
         for (auto& node : pList->vlist2) {
@@ -482,7 +488,7 @@ void InvertedIndex::vectorQuery(string s) {
         if (dictBody[tmp]) query.push_back(dictBody[tmp]);
     }
 
-    const int K = 10;
+    const int K = 15;
     // auto res = fastCosineScore(query, K);
     auto res = heuristicTopK(query, K);
 
@@ -588,4 +594,37 @@ void InvertedIndex::boolQuery(string s) {
         }
     }
     cout << endl;
+}
+
+void InvertedIndex::languageModel(string s) {
+    const static double lambda = 0.5;
+    // 计算权重
+    vector<double> score(n + 1);
+    for (int d = 1; d <= n; d++) {
+        double tmp = 1;
+        for (int i = 0; i < s.size(); i += 2) {
+            string cur = s.substr(i, 2);
+            if (cur == "\n" || cur == " ") continue;
+            assert(contentLength[d] != 0);
+            assert(cs != 0);
+            tmp *= lambda * dictBody[cur]->getFreqOfDoc(d) / contentLength[d] +
+                   (1.0 - lambda) * dictBody[cur]->totalFreq / cs;
+        }
+        score[d] = tmp;
+    }
+
+    // 取 topK
+    const static int K = 15;
+    priority_queue<pair<double, int>> q;
+    for (int i = 1; i <= n; i++) q.push({score[i], -i});
+
+    vector<pair<double, int>> res;
+    for (int i = 1; i <= K; i++) {
+        auto tp = q.top();
+        q.pop();
+        res.push_back({tp.first, -tp.second});
+    }
+
+    cout << "查询结果：\n";
+    for (auto& p : res) cout << p.second << ": " << p.first << endl;
 }
