@@ -36,7 +36,7 @@
             clearable
             v-model="expression"
         ></v-text-field>
-        <v-btn icon class="mt-3" @click="query">
+        <v-btn icon class="mt-3" @click="()=>{query(); searched = 1}">
           <v-icon>
             mdi-magnify
           </v-icon>
@@ -66,7 +66,11 @@
     <v-divider width="90%" class="mx-auto"></v-divider>
     <!-- 查询结果 -->
     <v-card elevation="2" width="80%" class="mx-auto mt-4">
-      <v-expansion-panels multiple>
+      <v-title
+          v-if="result.length===0 && searched"
+          class="mx-auto"
+      >无匹配结果</v-title>
+      <v-expansion-panels multiple v-else>
         <v-expansion-panel
           v-for="(item, index) in result"
           :key="index"
@@ -108,6 +112,7 @@ export default {
   name: 'HelloWorld',
   data () {
     return {
+      searched: 0,
       position: 0,
       mod: 0,
       expression: '',
@@ -138,6 +143,7 @@ export default {
       } catch (error) {
         console.log(error)
         // this.errMessage = error.response.data.error
+        this.errMessage = 'error'
         this.snackbar = true
       }
     }
