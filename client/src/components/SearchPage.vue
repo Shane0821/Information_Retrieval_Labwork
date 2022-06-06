@@ -13,7 +13,7 @@
           mandatory
           dense
           group
-          @change="expression = ''"
+          @change="()=>{expression = ''; searched = 0}"
         >
           <v-btn class="ml-4">
             bool
@@ -67,7 +67,7 @@
     <!-- 查询结果 -->
     <v-card elevation="2" width="80%" class="mx-auto mt-4">
       <v-banner
-          v-if="result.data===undefined && searched"
+          v-if="result.data==undefined && searched"
           class="mx-auto"
       >无匹配结果</v-banner>
       <v-expansion-panels multiple v-else>
@@ -111,7 +111,7 @@
 import SearchServices from '@/services/SearchServices'
 
 export default {
-  name: 'HelloWorld',
+  name: 'SearchPage',
   data () {
     return {
       searched: 0,
@@ -142,15 +142,11 @@ export default {
           position: this.position,
           mod: this.mod
         })
-        if (this.result.error !== undefined) {
-          this.errMessage = this.result.error
-          this.snackbar = true
-          return
-        }
+        console.log(this.result)
         this.searched = 1
       } catch (error) {
-        // console.log(error)
-        this.errMessage = 'service error'
+        console.log(error)
+        this.errMessage = error.response.data
         this.snackbar = true
       }
     }

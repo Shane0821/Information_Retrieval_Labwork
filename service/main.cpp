@@ -30,10 +30,11 @@ signed main() {
         if (mod == "0") {
             for (auto [score, id] : myLexicon.boolQuery(expression)) {
                 if (id <= 0) {
-                    ret["error"] = (id == 0 ? "请以 and 或 or 开头！"
+                    res.status = 400;
+                    res.set_content(id == 0 ? "请以 and 或 or 开头！"
                                     : id == -1 ? "布尔运算符后应有字符！"
-                                               : "not 后面只能跟一个字符！");
-                    res.set_content(ret.toStyledString(), "text/plain");
+                                               : "not 后面只能跟一个字符！",
+                                    "text/plain");
                     return;
                 }
                 Json::Value new_item;
