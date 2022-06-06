@@ -3,8 +3,8 @@
 #include <bits/stdc++.h>
 
 #include "./class/InvertedIndex.hpp"
+#include "./jsoncpp/json.h"
 #include "httplib.h"
-
 /*
 编译命令
 g++ main.cpp -o main -lwsock32 -lws2_32
@@ -21,16 +21,19 @@ signed main() {
         string expression = req.get_param_value("expression");
         string mod = req.get_param_value("mod");
         string position = req.get_param_value("position");
+        
+        Json::Value ret;
 
+        ret["response"]["x"] = 1;
+        
         if (mod == "0") {
-            //puts("m0");
+            // puts("m0");
         } else if (mod == "1") {
-            //myLexicon.vectorQuery(expression);
+            // myLexicon.vectorQuery(expression);
         } else {
-            //myLexicon.languageModel(expression);
+            // myLexicon.languageModel(expression);
         }
-
-        res.set_content("Hello World!", "text/plain");
+        res.set_content(ret.toStyledString(), "text/plain");
     });
     svr.listen("localhost", 8081);
 
