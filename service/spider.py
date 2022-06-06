@@ -45,14 +45,14 @@ for one in url_can:
         a = title(one_soup)
         c = acient(one_soup)
         d = content(one_soup)
-        print('%s 爬取完成!' % a)
         d = d.replace(" ", "")
         d = d.replace("\n", "")
         d = re.sub(u"\\(.*?\\)|\\{.*?}|\\[.*?]", "", d)
         d = re.sub(u"\\（.*?）|\\{.*?}|\\[.*?]|\\【.*?】",
                    "", d.encode('utf-8').decode())
         filepath = './dataset/%s.txt' % id
-        with open(filepath, 'w+', encoding='gbk') as f:
+        with open(filepath, 'w+', encoding='utf-8') as f:
             f.write(a + '\n' + b + '\n' + d)
         f.close()
+        print('%s 爬取完成!' % a)
 print('over========================================')

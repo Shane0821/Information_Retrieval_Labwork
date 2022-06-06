@@ -7,7 +7,7 @@
 using namespace std;
 
 // 文档总数
-const static int n = 265;
+const static int n = 300;
 
 class InvertedIndex {
    public:
@@ -22,6 +22,10 @@ class InvertedIndex {
     static double gBody;
     // 各个文件内容的长度
     int contentLength[n + 1];
+    // 文档内容
+    string docContent[n + 1];
+    // 文档标题
+    string docTitle[n + 1];
     // cf 的和
     static int cs;
 
@@ -73,15 +77,14 @@ class InvertedIndex {
      * @param type 查询区域
      * @return 文档向量交集
      */
-    vector<ListNode> intersectMulti(vector<string>& queries,
-                                    string type = "body");
+    vector<ListNode> intersectMulti(vector<string>& queries, string type = "0");
 
     /**
      * @param queries 查询字符集合
      * @param type 查询区域
      * @return 文档向量并集
      */
-    vector<ListNode> unionMulti(vector<string>& queries, string type = "body");
+    vector<ListNode> unionMulti(vector<string>& queries, string type = "0");
 
     /**
      * @param a 查询字符1
@@ -89,8 +92,7 @@ class InvertedIndex {
      * @param type 查询区域
      * @return 文档向量差集
      */
-    vector<ListNode> minus2(const string a, const string b,
-                            string type = "body");
+    vector<ListNode> minus2(const string a, const string b, string type = "0");
 
     /**
      * @param a 文档向量
@@ -98,7 +100,7 @@ class InvertedIndex {
      * @param type 查询区域
      * @return 文档向量差集
      */
-    vector<ListNode> minus2(vector<ListNode> a, string b, string type = "body");
+    vector<ListNode> minus2(vector<ListNode> a, string b, string type = "0");
 
     /**
      * @param query 查询涉及的 PostingList
@@ -124,11 +126,11 @@ class InvertedIndex {
     void loadFromDataset();
 
     // 向量查询
-    void vectorQuery(string s);
+    vector<pair<double, int>> vectorQuery(string s);
     // 布尔查询
-    void boolQuery(string s);
+    vector<pair<double, int>> boolQuery(string s, string position = "0");
     // 语言模型
-    void languageModel(string s);
+    vector<pair<double, int>> languageModel(string s);
 };
 double InvertedIndex::gBody = 0.7;
 double InvertedIndex::gTitle = 0.3;
@@ -159,6 +161,9 @@ void InvertedIndex::loadFromDataset() {
         string content;
         fs >> title >> author >> content;
         fs.close();
+        // 保持内容和标题
+        docContent[d] = content;
+        docTitle[d] = title;
 
         // caculate tf of each char in body
         unordered_map<string, int> freqBody;
@@ -215,33 +220,34 @@ void InvertedIndex::loadFromDataset() {
 
 vector<ListNode> InvertedIndex::zoneScore(const vector<ListNode>& vBody,
                                           const vector<ListNode>& vTitle,
-                                          bool type) {
+                                          bool weighted) {
     int n = vBody.size(), m = vTitle.size();
     int i = 0, j = 0;
     vector<ListNode> ans;
     while (i < n || j < m) {
         if (j == m) {  // 仅在body 中出现
             ans.push_back(ListNode(vBody[i].fileId,
-                                   gBody * (type ? vBody[i].tf_idf : 1)));
+                                   gBody * (weighted ? vBody[i].tf_idf : 1)));
             i++;
         } else if (i == n) {  // 仅在title 中出现
             ans.push_back(ListNode(vTitle[j].fileId,
-                                   gTitle * (type ? vTitle[j].tf_idf : 1)));
+                                   gTitle * (weighted ? vTitle[j].tf_idf : 1)));
             j++;
         } else if (vBody[i].fileId ==
                    vTitle[j].fileId) {  // title + body 中出现
-            ans.push_back(ListNode(vBody[i].fileId,
-                                   gBody * (type ? vBody[i].tf_idf : 1) +
-                                       gTitle * (type ? vTitle[j].tf_idf : 1)));
+            ans.push_back(
+                ListNode(vBody[i].fileId,
+                         gBody * (weighted ? vBody[i].tf_idf : 1) +
+                             gTitle * (weighted ? vTitle[j].tf_idf : 1)));
             i++;
             j++;
         } else if (vBody[i].fileId < vBody[j].fileId) {  // 仅在body 中出现
             ans.push_back(ListNode(vBody[i].fileId,
-                                   gBody * (type ? vBody[i].tf_idf : 1)));
+                                   gBody * (weighted ? vBody[i].tf_idf : 1)));
             i++;
         } else {  // 仅在title 中出现
             ans.push_back(ListNode(vTitle[j].fileId,
-                                   gTitle * (type ? vTitle[j].tf_idf : 1)));
+                                   gTitle * (weighted ? vTitle[j].tf_idf : 1)));
             j++;
         }
     }
@@ -289,15 +295,15 @@ vector<ListNode> InvertedIndex::intersectMulti(
 
 vector<ListNode> InvertedIndex::intersectMulti(vector<string>& queries,
                                                string type) {
-    if (type != "body" && type != "title") return {};
+    if (type != "0" && type != "1") return {};
     vector<vector<ListNode>> vec;
     for (auto& c : queries) {
         // 有一个为空则结果为空
-        if (type == "body") {
+        if (type == "0") {
             if (!dictBody[c]) return {};
             vec.push_back(dictBody[c]->vlist);
         }
-        if (type == "title") {
+        if (type == "1") {
             if (!dictTitle[c]) return {};
             vec.push_back(dictTitle[c]->vlist);
         }
@@ -358,11 +364,11 @@ vector<ListNode> InvertedIndex::unionMulti(vector<vector<ListNode>>& queries) {
 
 vector<ListNode> InvertedIndex::unionMulti(vector<string>& queries,
                                            string type) {
-    if (type != "body" && type != "title") return {};
+    if (type != "0" && type != "1") return {};
     vector<vector<ListNode>> vec;
     for (auto& c : queries) {
-        if (type == "body" && dictBody[c]) vec.push_back(dictBody[c]->vlist);
-        if (type == "title" && dictTitle[c]) vec.push_back(dictTitle[c]->vlist);
+        if (type == "0" && dictBody[c]) vec.push_back(dictBody[c]->vlist);
+        if (type == "1" && dictTitle[c]) vec.push_back(dictTitle[c]->vlist);
     }
     return unionMulti(vec);
 }
@@ -396,8 +402,8 @@ vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, vector<ListNode> b) {
 
 vector<ListNode> InvertedIndex::minus2(const string a, const string b,
                                        string type) {
-    if (type != "body" && type != "title") return {};
-    return type == "body"
+    if (type != "0" && type != "1") return {};
+    return type == "0"
                ? minus2(dictBody[a] ? dictBody[a]->vlist : vector<ListNode>(),
                         dictBody[b] ? dictBody[b]->vlist : vector<ListNode>())
                : minus2(
@@ -407,11 +413,11 @@ vector<ListNode> InvertedIndex::minus2(const string a, const string b,
 
 vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, string b,
                                        string type) {
-    if (type != "body" && type != "title") return {};
-    return type == "body" ? minus2(a, dictBody[b] ? dictBody[b]->vlist
-                                                  : vector<ListNode>())
-                          : minus2(a, dictTitle[b] ? dictTitle[b]->vlist
-                                                   : vector<ListNode>());
+    if (type != "0" && type != "1") return {};
+    return type == "0" ? minus2(a, dictBody[b] ? dictBody[b]->vlist
+                                               : vector<ListNode>())
+                       : minus2(a, dictTitle[b] ? dictTitle[b]->vlist
+                                                : vector<ListNode>());
 }
 
 vector<pair<double, int>> InvertedIndex::fastCosineScore(
@@ -436,7 +442,6 @@ vector<pair<double, int>> InvertedIndex::fastCosineScore(
         q.pop();
         res.push_back({tp.first, -tp.second});
     }
-
     return res;
 }
 
@@ -473,11 +478,10 @@ vector<pair<double, int>> InvertedIndex::heuristicTopK(
         q.pop();
         res.push_back({tp.first, -tp.second});
     }
-
     return res;
 }
 
-void InvertedIndex::vectorQuery(string s) {
+vector<pair<double, int>> InvertedIndex::vectorQuery(string s) {
     vector<PostingList*> query;
     for (int i = 0; i < s.size(); i += 3) {
         auto tmp = s.substr(i, 3);
@@ -486,13 +490,10 @@ void InvertedIndex::vectorQuery(string s) {
 
     const int K = 20;
     // auto res = fastCosineScore(query, K);
-    auto res = heuristicTopK(query, K);
-
-    cout << "查询结果：\n";
-    for (auto& p : res) cout << p.second << ": " << p.first << endl;
+    return heuristicTopK(query, K);
 }
 
-void InvertedIndex::boolQuery(string s) {
+vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
     string lastopt = "";
     vector<ListNode> ansBody;
     vector<ListNode> ansTitle;
@@ -515,7 +516,7 @@ void InvertedIndex::boolQuery(string s) {
             if (round != 0)
                 if (lastopt == "an") {
                     auto vec = intersectMulti(query);
-                    auto vec2 = intersectMulti(query, "title");
+                    auto vec2 = intersectMulti(query, "1");
                     if (round == 1) {
                         ansBody = vec;
                         ansTitle = vec2;
@@ -525,7 +526,7 @@ void InvertedIndex::boolQuery(string s) {
                     }
                 } else if (lastopt == "or") {
                     auto vec = unionMulti(query);
-                    auto vec2 = unionMulti(query, "title");
+                    auto vec2 = unionMulti(query, "1");
                     if (round == 1) {
                         ansBody = vec;
                         ansTitle = vec2;
@@ -539,7 +540,7 @@ void InvertedIndex::boolQuery(string s) {
                         break;
                     }
                     ansBody = minus2(ansBody, query[0]);
-                    ansTitle = minus2(ansTitle, query[0], "title");
+                    ansTitle = minus2(ansTitle, query[0], "1");
                 }
             lastopt = optLen2;
             query.clear();
@@ -549,46 +550,22 @@ void InvertedIndex::boolQuery(string s) {
             query.push_back(optLen3);
         }
     }
-
-    string qtype = "";
-    cout << "请输入查询位置（body/title/both）: \n";
-    while (qtype != "title" && qtype != "body" && qtype != "both") {
-        cin >> qtype;
-    }
-
-    cout << "查询结果：\n";
-    if (qtype == "title") {
-        if (!ansTitle.size()) {
-            cout << "null\n";
-        } else {
-            sort(ansTitle.begin(), ansTitle.end());
-            for (auto& node : ansTitle)
-                cout << node.fileId << ": " << node.tf_idf << endl;
-        }
-
-    } else if (qtype == "body") {
-        if (!ansBody.size()) {
-            cout << "null\n";
-        } else {
-            sort(ansBody.begin(), ansBody.end());
-            for (auto& node : ansBody)
-                cout << node.fileId << ": " << node.tf_idf << endl;
-        }
-
+    vector<pair<double, int>> res;
+    if (position == "1") {
+        sort(ansTitle.begin(), ansTitle.end());
+        for (auto& node : ansTitle) res.push_back({node.tf_idf, node.fileId});
+    } else if (position == "0") {
+        sort(ansBody.begin(), ansBody.end());
+        for (auto& node : ansBody) res.push_back({node.tf_idf, node.fileId});
     } else {
-        auto res = zoneScore(ansBody, ansTitle, 0);
-        if (!res.size()) {
-            cout << "null\n";
-        } else {
-            sort(res.begin(), res.end());
-            for (auto& node : res)
-                cout << node.fileId << ": " << node.tf_idf << endl;
-        }
+        auto combined = zoneScore(ansBody, ansTitle, 0);
+        sort(combined.begin(), combined.end());
+        for (auto& node : combined) res.push_back({node.tf_idf, node.fileId});
     }
-    cout << endl;
+    return res;
 }
 
-void InvertedIndex::languageModel(string s) {
+vector<pair<double, int>> InvertedIndex::languageModel(string s) {
     const static double lambda = 0.5;
     // 计算权重
     vector<double> score(n + 1);
@@ -616,7 +593,5 @@ void InvertedIndex::languageModel(string s) {
         q.pop();
         res.push_back({tp.first, -tp.second});
     }
-
-    cout << "查询结果：\n";
-    for (auto& p : res) cout << p.second << ": " << p.first << endl;
+    return res;
 }

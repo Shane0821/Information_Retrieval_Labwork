@@ -13,6 +13,7 @@
           mandatory
           dense
           group
+          @change="expression = ''"
         >
           <v-btn class="ml-4">
             bool
@@ -112,18 +113,7 @@ export default {
       expression: '',
       errMessage: 'error',
       snackbar: false,
-      result: [
-        {
-          name: '无题',
-          score: 25,
-          content: '花间一杯酒'
-        },
-        {
-          name: '滕王阁序',
-          score: 25,
-          content: '落霞与孤鹜齐飞'
-        }
-      ]
+      result: []
     }
   },
   methods: {
@@ -136,7 +126,7 @@ export default {
         var pwdblank = /^\S*$/
         if (!pwdblank.test(this.expression)) {
           this.snackbar = true
-          this.errMessage = '查询表达式不能有空格！'
+          this.errMessage = '查询内容不能有空格！'
           this.result = []
           return
         }

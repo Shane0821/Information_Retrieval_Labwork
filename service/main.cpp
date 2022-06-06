@@ -5,6 +5,11 @@
 #include "./class/InvertedIndex.hpp"
 #include "httplib.h"
 
+/*
+编译命令
+g++ main.cpp -o main -lwsock32 -lws2_32
+*/
+
 signed main() {
     InvertedIndex myLexicon;
     myLexicon.loadFromDataset();
@@ -12,21 +17,17 @@ signed main() {
     using namespace httplib;
     Server svr;
 
-    svr.Get("/", [](const Request &req, Response &res) {
-        if (req.has_param("expression")) {
-            auto val = req.get_param_value("expression");
-            cout << val.size() << endl;
-            for (int i = 0; i < val.size(); i += 3) {
-                cout << val.substr(i, 3) << endl;
-            }
-        }
-        if (req.has_param("mod")) {
-            auto val = req.get_param_value("mod");
-            cout << val << endl;
-        }
-        if (req.has_param("position")) {
-            auto val = req.get_param_value("position");
-            cout << val << endl;
+    svr.Get("/", [&](const Request &req, Response &res) {
+        string expression = req.get_param_value("expression");
+        string mod = req.get_param_value("mod");
+        string position = req.get_param_value("position");
+
+        if (mod == "0") {
+            //puts("m0");
+        } else if (mod == "1") {
+            //myLexicon.vectorQuery(expression);
+        } else {
+            //myLexicon.languageModel(expression);
         }
 
         res.set_content("Hello World!", "text/plain");
@@ -63,8 +64,3 @@ signed main() {
     // }
     return 0;
 }
-
-/*
-g++ main.cpp -o main -lwsock32 -lws2_32
-main
-*/
