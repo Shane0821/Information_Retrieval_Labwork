@@ -498,21 +498,18 @@ void InvertedIndex::boolQuery(string s) {
     vector<ListNode> ansTitle;
     vector<string> query;
     for (int i = 0, round = 0; i <= s.size(); i += 3) {
-        string curopt = s.substr(i, 3);
-        if (curopt == " ") {
-            cout << "不要有空格！\n";
-            break;
-        }
+        string optLen2 = s.substr(i, 2);
+        string optLen3 = s.substr(i, 3);
         // 开头为 and 或 or
-        if (i == 0 && (curopt != "an" && curopt != "or")) {
+        if (i == 0 && (optLen2 != "an" && optLen2 != "or")) {
             cout << "请以 and 或 or 开头！\n";
             break;
         }
         // 碰到运算符，或者结尾，把之前的字符进行运算加入答案
-        if (curopt == "an" || curopt == "or" || curopt == "no" ||
+        if (optLen2 == "an" || optLen2 == "or" || optLen2 == "no" ||
             i == s.size()) {
             if (lastopt != "" && !query.size()) {
-                cout << "两运算符之间应该有字符！\n";
+                cout << "算符后应该有字符！\n";
                 break;
             }
             if (round != 0)
@@ -544,13 +541,12 @@ void InvertedIndex::boolQuery(string s) {
                     ansBody = minus2(ansBody, query[0]);
                     ansTitle = minus2(ansTitle, query[0], "title");
                 }
-
-            lastopt = curopt;
+            lastopt = optLen2;
             query.clear();
-            if (curopt == "an" || curopt == "no") i++;
+            if (optLen2 == "or") i--;
             round++;
         } else {
-            query.push_back(curopt);
+            query.push_back(optLen3);
         }
     }
 
