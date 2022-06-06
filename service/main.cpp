@@ -4,9 +4,6 @@
 
 #include "./class/InvertedIndex.hpp"
 #include "httplib.h"
-/**
- * encoding: GBK
- */
 
 signed main() {
     InvertedIndex myLexicon;

@@ -6,132 +6,128 @@
 
 using namespace std;
 
-/**
- * encoding: GBK
- */
-
-// ÎÄµµ×ÜÊı
+// æ–‡æ¡£æ€»æ•°
 const static int n = 265;
 
 class InvertedIndex {
    public:
-    // body ÖĞ×Ö·ûË÷Òı
+    // body ä¸­å­—ç¬¦ç´¢å¼•
     unordered_map<string, PostingList*> dictBody;
-    // title ÖĞ×Ö·ûË÷Òı
+    // title ä¸­å­—ç¬¦ç´¢å¼•
     unordered_map<string, PostingList*> dictTitle;
 
-    // ±êÌâÈ¨ÖØ
+    // æ ‡é¢˜æƒé‡
     static double gTitle;
-    // ÄÚÈİÈ¨ÖØ
+    // å†…å®¹æƒé‡
     static double gBody;
-    // ¸÷¸öÎÄ¼şÄÚÈİµÄ³¤¶È
+    // å„ä¸ªæ–‡ä»¶å†…å®¹çš„é•¿åº¦
     int contentLength[n + 1];
-    // cf µÄºÍ
+    // cf çš„å’Œ
     static int cs;
 
    private:
     /**
-     * @param a ÎÄµµÏòÁ¿1
-     * @param b ÎÄµµÏòÁ¿2
-     * @return ÎÄµµÏòÁ¿1ÓëÎÄµµÏòÁ¿2µÄ½»¼¯
+     * @param a æ–‡æ¡£å‘é‡1
+     * @param b æ–‡æ¡£å‘é‡2
+     * @return æ–‡æ¡£å‘é‡1ä¸æ–‡æ¡£å‘é‡2çš„äº¤é›†
      */
     vector<ListNode> intersect2(vector<ListNode>& a, vector<ListNode>& b);
 
     /**
-     * @param queries ²éÑ¯ÎÄµµÏòÁ¿¼¯ºÏ
-     * @return ÎÄµµÏòÁ¿½»¼¯
+     * @param queries æŸ¥è¯¢æ–‡æ¡£å‘é‡é›†åˆ
+     * @return æ–‡æ¡£å‘é‡äº¤é›†
      */
     vector<ListNode> intersectMulti(vector<vector<ListNode>>& queries);
 
     /**
-     * @param a ÎÄµµÏòÁ¿1
-     * @param b ÎÄµµÏòÁ¿2
-     * @return ÎÄµµÏòÁ¿1ÓëÎÄµµÏòÁ¿2µÄ²¢¼¯
+     * @param a æ–‡æ¡£å‘é‡1
+     * @param b æ–‡æ¡£å‘é‡2
+     * @return æ–‡æ¡£å‘é‡1ä¸æ–‡æ¡£å‘é‡2çš„å¹¶é›†
      */
     vector<ListNode> union2(vector<ListNode>& a, vector<ListNode>& b);
 
     /**
-     * @param queries ²éÑ¯ÎÄµµÏòÁ¿¼¯ºÏ
-     * @return ÎÄµµÏòÁ¿²¢¼¯
+     * @param queries æŸ¥è¯¢æ–‡æ¡£å‘é‡é›†åˆ
+     * @return æ–‡æ¡£å‘é‡å¹¶é›†
      */
     vector<ListNode> unionMulti(vector<vector<ListNode>>& queries);
 
     /**
-     * @param a ÎÄµµÏòÁ¿1
-     * @param b ÎÄµµÏòÁ¿2
-     * @return ÎÄµµÏòÁ¿²î¼¯
+     * @param a æ–‡æ¡£å‘é‡1
+     * @param b æ–‡æ¡£å‘é‡2
+     * @return æ–‡æ¡£å‘é‡å·®é›†
      */
     vector<ListNode> minus2(vector<ListNode> a, vector<ListNode> b);
 
     /**
-     * @param a body ÖĞ²éÑ¯µÃµ½µÄÎÄµµÏòÁ¿
-     * @param b title ÖĞ²éÑ¯µÃµ½µÄÎÄµµÏòÁ¿
-     * @param type type=0 ±íÊ¾²»´øÈ¨£¬type=1 ±íÊ¾´øÈ¨
-     * @return Á½¸öÎÄµµÏòÁ¿µÄ¼ÓÈ¨ºÏ²¢
+     * @param a body ä¸­æŸ¥è¯¢å¾—åˆ°çš„æ–‡æ¡£å‘é‡
+     * @param b title ä¸­æŸ¥è¯¢å¾—åˆ°çš„æ–‡æ¡£å‘é‡
+     * @param type type=0 è¡¨ç¤ºä¸å¸¦æƒï¼Œtype=1 è¡¨ç¤ºå¸¦æƒ
+     * @return ä¸¤ä¸ªæ–‡æ¡£å‘é‡çš„åŠ æƒåˆå¹¶
      */
     vector<ListNode> zoneScore(const vector<ListNode>& vBody,
                                const vector<ListNode>& vTitle, bool type = 0);
 
     /**
-     * @param queries ²éÑ¯×Ö·û¼¯ºÏ
-     * @param type ²éÑ¯ÇøÓò
-     * @return ÎÄµµÏòÁ¿½»¼¯
+     * @param queries æŸ¥è¯¢å­—ç¬¦é›†åˆ
+     * @param type æŸ¥è¯¢åŒºåŸŸ
+     * @return æ–‡æ¡£å‘é‡äº¤é›†
      */
     vector<ListNode> intersectMulti(vector<string>& queries,
                                     string type = "body");
 
     /**
-     * @param queries ²éÑ¯×Ö·û¼¯ºÏ
-     * @param type ²éÑ¯ÇøÓò
-     * @return ÎÄµµÏòÁ¿²¢¼¯
+     * @param queries æŸ¥è¯¢å­—ç¬¦é›†åˆ
+     * @param type æŸ¥è¯¢åŒºåŸŸ
+     * @return æ–‡æ¡£å‘é‡å¹¶é›†
      */
     vector<ListNode> unionMulti(vector<string>& queries, string type = "body");
 
     /**
-     * @param a ²éÑ¯×Ö·û1
-     * @param b ²éÑ¯×Ö·û2
-     * @param type ²éÑ¯ÇøÓò
-     * @return ÎÄµµÏòÁ¿²î¼¯
+     * @param a æŸ¥è¯¢å­—ç¬¦1
+     * @param b æŸ¥è¯¢å­—ç¬¦2
+     * @param type æŸ¥è¯¢åŒºåŸŸ
+     * @return æ–‡æ¡£å‘é‡å·®é›†
      */
     vector<ListNode> minus2(const string a, const string b,
                             string type = "body");
 
     /**
-     * @param a ÎÄµµÏòÁ¿
-     * @param b ²éÑ¯×Ö·û
-     * @param type ²éÑ¯ÇøÓò
-     * @return ÎÄµµÏòÁ¿²î¼¯
+     * @param a æ–‡æ¡£å‘é‡
+     * @param b æŸ¥è¯¢å­—ç¬¦
+     * @param type æŸ¥è¯¢åŒºåŸŸ
+     * @return æ–‡æ¡£å‘é‡å·®é›†
      */
     vector<ListNode> minus2(vector<ListNode> a, string b, string type = "body");
 
     /**
-     * @param query ²éÑ¯Éæ¼°µÄ PostingList
-     * @param K ĞèÒª·µ»ØµÄÎÄµµÊı
-     * @return Âú×ãÒªÇóµÄÎÄµµµÃ·ÖºÍ±àºÅµÄ¼¯ºÏ
+     * @param query æŸ¥è¯¢æ¶‰åŠçš„ PostingList
+     * @param K éœ€è¦è¿”å›çš„æ–‡æ¡£æ•°
+     * @return æ»¡è¶³è¦æ±‚çš„æ–‡æ¡£å¾—åˆ†å’Œç¼–å·çš„é›†åˆ
      */
     vector<pair<double, int>> fastCosineScore(vector<PostingList*> query,
                                               int K);
 
     /**
-     * @param query ²éÑ¯Éæ¼°µÄ PostingList
-     * @param K ĞèÒª·µ»ØµÄÎÄµµÊı
-     * @return Âú×ãÒªÇóµÄÎÄµµµÃ·ÖºÍ±àºÅµÄ¼¯ºÏ
+     * @param query æŸ¥è¯¢æ¶‰åŠçš„ PostingList
+     * @param K éœ€è¦è¿”å›çš„æ–‡æ¡£æ•°
+     * @return æ»¡è¶³è¦æ±‚çš„æ–‡æ¡£å¾—åˆ†å’Œç¼–å·çš„é›†åˆ
      */
     vector<pair<double, int>> heuristicTopK(vector<PostingList*> query, int K);
 
    public:
-    // ¹¹Ôìº¯Êı
+    // æ„é€ å‡½æ•°
     InvertedIndex() = default;
-    // Îö¹¹º¯Êı
+    // ææ„å‡½æ•°
     ~InvertedIndex();
-    // ¼ÓÔØÊı¾İ
+    // åŠ è½½æ•°æ®
     void loadFromDataset();
 
-    // ÏòÁ¿²éÑ¯
+    // å‘é‡æŸ¥è¯¢
     void vectorQuery(string s);
-    // ²¼¶û²éÑ¯
+    // å¸ƒå°”æŸ¥è¯¢
     void boolQuery(string s);
-    // ÓïÑÔÄ£ĞÍ
+    // è¯­è¨€æ¨¡å‹
     void languageModel(string s);
 };
 double InvertedIndex::gBody = 0.7;
@@ -167,11 +163,11 @@ void InvertedIndex::loadFromDataset() {
         // caculate tf of each char in body
         unordered_map<string, int> freqBody;
         int maxFreqBody = 0;
-        for (int i = 0; i < content.size(); i += 2) {
-            auto lex = content.substr(i, 2);
-            if (lex == "¡£" || lex == "£¬" || lex == "£º" || lex == "£»" ||
-                lex == "£¡" || lex == "£¿" || lex == "¡¶" || lex == "¡·" ||
-                lex == "¡±" || lex == "¡°" || lex == "\n" || lex == " ")
+        for (int i = 0; i < content.size(); i += 3) {
+            auto lex = content.substr(i, 3);
+            if (lex == "ã€‚" || lex == "ï¼Œ" || lex == "ï¼š" || lex == "ï¼›" ||
+                lex == "ï¼" || lex == "ï¼Ÿ" || lex == "ã€Š" || lex == "ã€‹" ||
+                lex == "â€" || lex == "â€œ" || lex == "\n" || lex == " ")
                 continue;
             freqBody[lex]++;
             maxFreqBody = max(maxFreqBody, freqBody[lex]);
@@ -179,10 +175,10 @@ void InvertedIndex::loadFromDataset() {
         }
         // append to dictBody
         for (auto& pii : freqBody) {
-            // ÈôË÷ÒıÖĞ²»´æÔÚÕâ¸ö¹Ø¼ü×Ö£¬ÔòÌí¼Óµ½Ë÷ÒıÖĞ
-            // Ë÷ÒıÖ¸ÏòÒ»¸ö PostingList
+            // è‹¥ç´¢å¼•ä¸­ä¸å­˜åœ¨è¿™ä¸ªå…³é”®å­—ï¼Œåˆ™æ·»åŠ åˆ°ç´¢å¼•ä¸­
+            // ç´¢å¼•æŒ‡å‘ä¸€ä¸ª PostingList
             if (!dictBody[pii.first]) dictBody[pii.first] = new PostingList;
-            // PostingList ÖĞ²åÈë½Úµã
+            // PostingList ä¸­æ’å…¥èŠ‚ç‚¹
             dictBody[pii.first]->insert(ListNode(d, 0, pii.second,
                                                  1.0 * pii.second / maxFreqBody,
 
@@ -192,26 +188,26 @@ void InvertedIndex::loadFromDataset() {
 
         // caculate tf of each char in title
         unordered_map<string, int> freqTitle;
-        for (int i = 0; i < title.size(); i += 2) {
-            auto lex = title.substr(i, 2);
-            if (lex == "¡£" || lex == "£¬" || lex == "£º" || lex == "£»" ||
-                lex == "£¡" || lex == "£¿" || lex == "¡¶" || lex == "¡·" ||
-                lex == "¡±" || lex == "¡°" || lex == "\n" || lex == " ")
+        for (int i = 0; i < title.size(); i += 3) {
+            auto lex = title.substr(i, 3);
+            if (lex == "ã€‚" || lex == "ï¼Œ" || lex == "ï¼š" || lex == "ï¼›" ||
+                lex == "ï¼" || lex == "ï¼Ÿ" || lex == "ã€Š" || lex == "ã€‹" ||
+                lex == "â€" || lex == "â€œ" || lex == "\n" || lex == " ")
                 continue;
             freqTitle[lex]++;
         }
         // append to dictTitle
         for (auto& pii : freqTitle) {
-            // ÈôË÷ÒıÖĞ²»´æÔÚÕâ¸ö¹Ø¼ü×Ö£¬ÔòÌí¼Óµ½Ë÷ÒıÖĞ
-            // Ë÷ÒıÖ¸ÏòÒ»¸ö PostingList
+            // è‹¥ç´¢å¼•ä¸­ä¸å­˜åœ¨è¿™ä¸ªå…³é”®å­—ï¼Œåˆ™æ·»åŠ åˆ°ç´¢å¼•ä¸­
+            // ç´¢å¼•æŒ‡å‘ä¸€ä¸ª PostingList
             if (!dictTitle[pii.first]) dictTitle[pii.first] = new PostingList;
-            // PostingList ÖĞ²åÈë½Úµã
+            // PostingList ä¸­æ’å…¥èŠ‚ç‚¹
             dictTitle[pii.first]->insert(ListNode(d, 0, pii.second));
         }
     }
     cout << "Dataset loaded successfully!\n";
 
-    // ³õÊ¼»¯ÎÄ¼şÈ¨ÖØ
+    // åˆå§‹åŒ–æ–‡ä»¶æƒé‡
     for (auto& p : dictBody) p.second->initWeight(n), p.second->sorList2();
     for (auto& p : dictTitle) p.second->initWeight(n);
     cout << "Weight initialized.\n";
@@ -224,26 +220,26 @@ vector<ListNode> InvertedIndex::zoneScore(const vector<ListNode>& vBody,
     int i = 0, j = 0;
     vector<ListNode> ans;
     while (i < n || j < m) {
-        if (j == m) {  // ½öÔÚbody ÖĞ³öÏÖ
+        if (j == m) {  // ä»…åœ¨body ä¸­å‡ºç°
             ans.push_back(ListNode(vBody[i].fileId,
                                    gBody * (type ? vBody[i].tf_idf : 1)));
             i++;
-        } else if (i == n) {  // ½öÔÚtitle ÖĞ³öÏÖ
+        } else if (i == n) {  // ä»…åœ¨title ä¸­å‡ºç°
             ans.push_back(ListNode(vTitle[j].fileId,
                                    gTitle * (type ? vTitle[j].tf_idf : 1)));
             j++;
         } else if (vBody[i].fileId ==
-                   vTitle[j].fileId) {  // title + body ÖĞ³öÏÖ
+                   vTitle[j].fileId) {  // title + body ä¸­å‡ºç°
             ans.push_back(ListNode(vBody[i].fileId,
                                    gBody * (type ? vBody[i].tf_idf : 1) +
                                        gTitle * (type ? vTitle[j].tf_idf : 1)));
             i++;
             j++;
-        } else if (vBody[i].fileId < vBody[j].fileId) {  // ½öÔÚbody ÖĞ³öÏÖ
+        } else if (vBody[i].fileId < vBody[j].fileId) {  // ä»…åœ¨body ä¸­å‡ºç°
             ans.push_back(ListNode(vBody[i].fileId,
                                    gBody * (type ? vBody[i].tf_idf : 1)));
             i++;
-        } else {  // ½öÔÚtitle ÖĞ³öÏÖ
+        } else {  // ä»…åœ¨title ä¸­å‡ºç°
             ans.push_back(ListNode(vTitle[j].fileId,
                                    gTitle * (type ? vTitle[j].tf_idf : 1)));
             j++;
@@ -257,15 +253,15 @@ vector<ListNode> InvertedIndex::intersect2(vector<ListNode>& a,
     int pa = 0, pb = 0;
 
     vector<ListNode> ans;
-    // pa ºÍ pb Ö»Òª¶¼²»Îª¿Õ¾Í¿ÉÒÔÈ¡½»¼¯
+    // pa å’Œ pb åªè¦éƒ½ä¸ä¸ºç©ºå°±å¯ä»¥å–äº¤é›†
     while (pa < a.size() && pb < b.size()) {
-        if (a[pa].fileId == b[pb].fileId) {  // ÎÄ¼ş id ÏàÍ¬£¬¼ÓÈë½»¼¯
+        if (a[pa].fileId == b[pb].fileId) {  // æ–‡ä»¶ id ç›¸åŒï¼ŒåŠ å…¥äº¤é›†
             ans.push_back(ListNode(a[pa].fileId, a[pa].tf_idf + b[pb].tf_idf));
             pa++, pb++;
         } else if (a[pa].fileId <
-                   b[pb].fileId) {  // ÎÄ¼ş id ²»Í¬£¬²»¼ÓÈë½»¼¯£¬pa ÒÆ¶¯
+                   b[pb].fileId) {  // æ–‡ä»¶ id ä¸åŒï¼Œä¸åŠ å…¥äº¤é›†ï¼Œpa ç§»åŠ¨
             pa++;
-        } else {  // ÎÄ¼ş id ²»Í¬£¬²»¼ÓÈë½»¼¯£¬pb ÒÆ¶¯
+        } else {  // æ–‡ä»¶ id ä¸åŒï¼Œä¸åŠ å…¥äº¤é›†ï¼Œpb ç§»åŠ¨
             pb++;
         }
     }
@@ -276,7 +272,7 @@ vector<ListNode> InvertedIndex::intersectMulti(
     vector<vector<ListNode>>& queries) {
     for (auto& p : queries)
         if (!p.size()) return {};
-    // °´³¤¶È´ÓĞ¡µ½´óÅÅĞò
+    // æŒ‰é•¿åº¦ä»å°åˆ°å¤§æ’åº
     auto cmp = [&](const vector<ListNode>& a,
                    const vector<ListNode>& b) -> bool {
         return a.size() < b.size();
@@ -284,7 +280,7 @@ vector<ListNode> InvertedIndex::intersectMulti(
     sort(queries.begin(), queries.end(), cmp);
 
     vector<ListNode> resultList = queries[0];
-    // ÅÅĞòºóÃ¿´ÎºÏ²¢µÄÒ»¶¨ÊÇ×î¶ÌµÄÁ½¸ö
+    // æ’åºåæ¯æ¬¡åˆå¹¶çš„ä¸€å®šæ˜¯æœ€çŸ­çš„ä¸¤ä¸ª
     for (int i = 1; i < queries.size(); i++)
         resultList = intersect2(resultList, queries[i]);
 
@@ -296,7 +292,7 @@ vector<ListNode> InvertedIndex::intersectMulti(vector<string>& queries,
     if (type != "body" && type != "title") return {};
     vector<vector<ListNode>> vec;
     for (auto& c : queries) {
-        // ÓĞÒ»¸öÎª¿ÕÔò½á¹ûÎª¿Õ
+        // æœ‰ä¸€ä¸ªä¸ºç©ºåˆ™ç»“æœä¸ºç©º
         if (type == "body") {
             if (!dictBody[c]) return {};
             vec.push_back(dictBody[c]->vlist);
@@ -314,7 +310,7 @@ vector<ListNode> InvertedIndex::union2(vector<ListNode>& a,
     int pa = 0, pb = 0;
 
     vector<ListNode> ans;
-    // pa ºÍ pb Ö»ÒªÓĞÒ»¸ö²»Îª¿Õ¾Í¿ÉÒÔÈ¡²¢
+    // pa å’Œ pb åªè¦æœ‰ä¸€ä¸ªä¸ä¸ºç©ºå°±å¯ä»¥å–å¹¶
     while (pa < a.size() || pb < b.size()) {
         if (pa == a.size()) {
             ans.push_back(ListNode(b[pb].fileId, b[pb].tf_idf));
@@ -323,13 +319,13 @@ vector<ListNode> InvertedIndex::union2(vector<ListNode>& a,
             ans.push_back(ListNode(a[pa].fileId, a[pa].tf_idf));
             pa++;
         } else if (a[pa].fileId ==
-                   b[pb].fileId) {  // ÎÄ¼ş id ÏàÍ¬£¬È¡ 1 ¸ö¼ÓÈë²¢¼¯
+                   b[pb].fileId) {  // æ–‡ä»¶ id ç›¸åŒï¼Œå– 1 ä¸ªåŠ å…¥å¹¶é›†
             ans.push_back(ListNode(a[pa].fileId, a[pa].tf_idf + b[pb].tf_idf));
             pa++, pb++;
-        } else if (a[pa].fileId < b[pb].fileId) {  // pa µÄÎÄ¼ş id Ğ¡£¬¼ÓÈë²¢¼¯
+        } else if (a[pa].fileId < b[pb].fileId) {  // pa çš„æ–‡ä»¶ id å°ï¼ŒåŠ å…¥å¹¶é›†
             ans.push_back(ListNode(a[pa].fileId, a[pa].tf_idf));
             pa++;
-        } else {  // pb µÄÎÄ¼ş id Ğ¡£¬¼ÓÈë²¢¼¯
+        } else {  // pb çš„æ–‡ä»¶ id å°ï¼ŒåŠ å…¥å¹¶é›†
             ans.push_back(ListNode(b[pb].fileId, b[pb].tf_idf));
             pb++;
         }
@@ -340,13 +336,13 @@ vector<ListNode> InvertedIndex::union2(vector<ListNode>& a,
 vector<ListNode> InvertedIndex::unionMulti(vector<vector<ListNode>>& queries) {
     if (!queries.size()) return {};
 #define piip tuple<int, int, vector<ListNode>>
-    // ³¤¶È£¬ÊÇ·ñÊÇÔ­±¾´æÔÚµÄ List£¬List Ö¸Õë
+    // é•¿åº¦ï¼Œæ˜¯å¦æ˜¯åŸæœ¬å­˜åœ¨çš„ Listï¼ŒList æŒ‡é’ˆ
     priority_queue<piip, vector<piip>, greater<piip>> q;
 #undef piip
 
     for (auto& p : queries) q.push({p.size(), 1, p});
     while (q.size() >= 2) {
-        // È¡×î¶ÌµÄÁ½¸öºÏ²¢
+        // å–æœ€çŸ­çš„ä¸¤ä¸ªåˆå¹¶
         auto tp1 = q.top();
         q.pop();
         auto tp2 = q.top();
@@ -378,19 +374,19 @@ vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, vector<ListNode> b) {
     int pa = 0, pb = 0;
 
     vector<ListNode> resultList;
-    // pa ²»Îª¿Õ²Å×ö²î
+    // pa ä¸ä¸ºç©ºæ‰åšå·®
     while (pa < a.size()) {
         if (pb == b.size()) {
             resultList.push_back(
                 ListNode(a[pa].fileId, a[pa].tf_idf, a[pa].tf));
             pa++;
-        } else if (a[pa].fileId == b[pb].fileId) {  // ÎÄ¼ş id ÏàÍ¬£¬²»ÔÚ²î¼¯ÖĞ
+        } else if (a[pa].fileId == b[pb].fileId) {  // æ–‡ä»¶ id ç›¸åŒï¼Œä¸åœ¨å·®é›†ä¸­
             pa++, pb++;
-        } else if (a[pa].fileId < b[pb].fileId) {  // pa µÄÎÄ¼ş id Ğ¡£¬¼ÓÈë²î¼¯
+        } else if (a[pa].fileId < b[pb].fileId) {  // pa çš„æ–‡ä»¶ id å°ï¼ŒåŠ å…¥å·®é›†
             resultList.push_back(
                 ListNode(a[pa].fileId, a[pa].tf_idf, a[pa].tf));
             pa++;
-        } else {  // pb µÄÎÄ¼ş id Ğ¡£¬²»Ó°Ïì²î¼¯£¬Ìø¹ı
+        } else {  // pb çš„æ–‡ä»¶ id å°ï¼Œä¸å½±å“å·®é›†ï¼Œè·³è¿‡
             pb++;
         }
     }
@@ -483,16 +479,16 @@ vector<pair<double, int>> InvertedIndex::heuristicTopK(
 
 void InvertedIndex::vectorQuery(string s) {
     vector<PostingList*> query;
-    for (int i = 0; i < s.size(); i++) {
-        auto tmp = s.substr(i, 2);
+    for (int i = 0; i < s.size(); i += 3) {
+        auto tmp = s.substr(i, 3);
         if (dictBody[tmp]) query.push_back(dictBody[tmp]);
     }
 
-    const int K = 15;
+    const int K = 20;
     // auto res = fastCosineScore(query, K);
     auto res = heuristicTopK(query, K);
 
-    cout << "²éÑ¯½á¹û£º\n";
+    cout << "æŸ¥è¯¢ç»“æœï¼š\n";
     for (auto& p : res) cout << p.second << ": " << p.first << endl;
 }
 
@@ -501,22 +497,22 @@ void InvertedIndex::boolQuery(string s) {
     vector<ListNode> ansBody;
     vector<ListNode> ansTitle;
     vector<string> query;
-    for (int i = 0, round = 0; i <= s.size(); i += 2) {
-        string curopt = s.substr(i, 2);
+    for (int i = 0, round = 0; i <= s.size(); i += 3) {
+        string curopt = s.substr(i, 3);
         if (curopt == " ") {
-            cout << "²»ÒªÓĞ¿Õ¸ñ£¡\n";
+            cout << "ä¸è¦æœ‰ç©ºæ ¼ï¼\n";
             break;
         }
-        // ¿ªÍ·Îª and »ò or
+        // å¼€å¤´ä¸º and æˆ– or
         if (i == 0 && (curopt != "an" && curopt != "or")) {
-            cout << "ÇëÒÔ and »ò or ¿ªÍ·£¡\n";
+            cout << "è¯·ä»¥ and æˆ– or å¼€å¤´ï¼\n";
             break;
         }
-        // Åöµ½ÔËËã·û£¬»òÕß½áÎ²£¬°ÑÖ®Ç°µÄ×Ö·û½øĞĞÔËËã¼ÓÈë´ğ°¸
+        // ç¢°åˆ°è¿ç®—ç¬¦ï¼Œæˆ–è€…ç»“å°¾ï¼ŒæŠŠä¹‹å‰çš„å­—ç¬¦è¿›è¡Œè¿ç®—åŠ å…¥ç­”æ¡ˆ
         if (curopt == "an" || curopt == "or" || curopt == "no" ||
             i == s.size()) {
             if (lastopt != "" && !query.size()) {
-                cout << "Á½ÔËËã·ûÖ®¼äÓ¦¸ÃÓĞ×Ö·û£¡\n";
+                cout << "ä¸¤è¿ç®—ç¬¦ä¹‹é—´åº”è¯¥æœ‰å­—ç¬¦ï¼\n";
                 break;
             }
             if (round != 0)
@@ -542,7 +538,7 @@ void InvertedIndex::boolQuery(string s) {
                     }
                 } else if (lastopt == "no") {
                     if (query.size() > 1) {
-                        cout << "not ºóÃæÖ»ÄÜ¸úÒ»¸ö×Ö·û£¡\n";
+                        cout << "not åé¢åªèƒ½è·Ÿä¸€ä¸ªå­—ç¬¦ï¼\n";
                         break;
                     }
                     ansBody = minus2(ansBody, query[0]);
@@ -559,12 +555,12 @@ void InvertedIndex::boolQuery(string s) {
     }
 
     string qtype = "";
-    cout << "ÇëÊäÈë²éÑ¯Î»ÖÃ£¨body/title/both£©: \n";
+    cout << "è¯·è¾“å…¥æŸ¥è¯¢ä½ç½®ï¼ˆbody/title/bothï¼‰: \n";
     while (qtype != "title" && qtype != "body" && qtype != "both") {
         cin >> qtype;
     }
 
-    cout << "²éÑ¯½á¹û£º\n";
+    cout << "æŸ¥è¯¢ç»“æœï¼š\n";
     if (qtype == "title") {
         if (!ansTitle.size()) {
             cout << "null\n";
@@ -598,12 +594,12 @@ void InvertedIndex::boolQuery(string s) {
 
 void InvertedIndex::languageModel(string s) {
     const static double lambda = 0.5;
-    // ¼ÆËãÈ¨ÖØ
+    // è®¡ç®—æƒé‡
     vector<double> score(n + 1);
     for (int d = 1; d <= n; d++) {
         double tmp = 1;
-        for (int i = 0; i < s.size(); i += 2) {
-            string cur = s.substr(i, 2);
+        for (int i = 0; i < s.size(); i += 3) {
+            string cur = s.substr(i, 3);
             if (cur == "\n" || cur == " ") continue;
             assert(contentLength[d] != 0);
             assert(cs != 0);
@@ -613,8 +609,8 @@ void InvertedIndex::languageModel(string s) {
         score[d] = tmp;
     }
 
-    // È¡ topK
-    const static int K = 15;
+    // å– topK
+    const static int K = 20;
     priority_queue<pair<double, int>> q;
     for (int i = 1; i <= n; i++) q.push({score[i], -i});
 
@@ -625,6 +621,6 @@ void InvertedIndex::languageModel(string s) {
         res.push_back({tp.first, -tp.second});
     }
 
-    cout << "²éÑ¯½á¹û£º\n";
+    cout << "æŸ¥è¯¢ç»“æœï¼š\n";
     for (auto& p : res) cout << p.second << ": " << p.first << endl;
 }
