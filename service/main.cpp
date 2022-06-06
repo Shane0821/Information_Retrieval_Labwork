@@ -27,52 +27,49 @@ signed main() {
 
         Json::Value ret;
 
-        Json::Value new_item;
-        new_item["name"] = "滕王阁序";
-        new_item["content"] = "落霞与孤鹜齐飞";
-        new_item["score"] = 23.33;
-
-        ret.append(new_item);
-
         if (mod == "0") {
-            // puts("m0");
-        } else if (mod == "1") {
-            // myLexicon.vectorQuery(expression);
-        } else {
-            // myLexicon.languageModel(expression);
-        }
+            for (auto [score, id] : myLexicon.boolQuery(expression)) {
+                if (id <= 0) {
+                    ret["error"] = (id == 0 ? "请以 and 或 or 开头！"
+                                    : id == -1 ? "布尔运算符后应有字符！"
+                                               : "not 后面只能跟一个字符！");
+                    res.set_content(ret.toStyledString(), "text/plain");
+                    return;
+                }
+                Json::Value new_item;
 
+                new_item["title"] = myLexicon.docTitle[id];
+                new_item["content"] = myLexicon.docContent[id];
+                new_item["score"] = score;
+                new_item["id"] = id;
+
+                ret.append(new_item);
+            }
+        } else if (mod == "1") {
+            for (auto [score, id] : myLexicon.vectorQuery(expression)) {
+                Json::Value new_item;
+
+                new_item["title"] = myLexicon.docTitle[id];
+                new_item["content"] = myLexicon.docContent[id];
+                new_item["score"] = score;
+                new_item["id"] = id;
+
+                ret.append(new_item);
+            }
+        } else {
+            for (auto [score, id] : myLexicon.languageModel(expression)) {
+                Json::Value new_item;
+
+                new_item["title"] = myLexicon.docTitle[id];
+                new_item["content"] = myLexicon.docContent[id];
+                new_item["score"] = score;
+                new_item["id"] = id;
+
+                ret.append(new_item);
+            }
+        }
         res.set_content(ret.toStyledString(), "text/plain");
     });
     svr.listen("localhost", 8081);
-
-    // while (1) {
-    //     string s;
-    //     // 查询类型
-    //     string querytype;
-    //     while (querytype != "vector" && querytype != "bool" &&
-    //            querytype != "language") {
-    //         cout << "请输入查询模型（bool/vector/language）：\n";
-    //         cin >> querytype;
-    //     }
-    //     // cout << "请输入查询位置";
-
-    //     cout << "请输入查询表达式（no spaces）：\n";
-    //     cin >> s;
-
-    //     if (querytype == "bool")
-    //         myLexicon.boolQuery(s);
-    //     else if (querytype == "vector")
-    //         myLexicon.vectorQuery(s);
-    //     else
-    //         myLexicon.languageModel(s);
-
-    //     string check;
-    //     while (check != "y" && check != "n") {
-    //         cout << "是否继续查询（y/n）？\n";
-    //         cin >> check;
-    //     }
-    //     if (check == "n") break;
-    // }
     return 0;
 }

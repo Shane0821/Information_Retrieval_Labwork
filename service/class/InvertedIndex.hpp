@@ -467,15 +467,12 @@ vector<pair<double, int>> InvertedIndex::heuristicTopK(
 
     vector<double> score(n + 1);
     const double eps = 0.5;
-    int cnt = 0;
     for (auto& pList : query) {
         for (auto& node : pList->vlist2) {
             if (node.tf_idf < eps) break;
-            cnt++;
             score[node.fileId] += node.tf_idf;
         }
     }
-    cout << cnt << endl;
 
     for (int i = 1; i <= n; i++) {
         assert(contentLength[i] != 0);
@@ -506,13 +503,14 @@ vector<pair<double, int>> InvertedIndex::vectorQuery(string s) {
     return heuristicTopK(query, K);
 }
 
-/*
-第一个文件的 fileId < 0 表示出错
--1: 请以 and 或 or 开头！
--2: 布尔运算符后应有字符！
--3: not 后面只能跟一个字符！
-*/
 vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
+    /*
+    第一个文件的 fileId <= 0 表示出错
+    0: 请以 and 或 or 开头！
+    -1: 布尔运算符后应有字符！
+    -2: not 后面只能跟一个字符！
+    */
+
     string lastopt = "";
     vector<ListNode> ansBody;
     vector<ListNode> ansTitle;
@@ -522,13 +520,13 @@ vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
         string optLen3 = s.substr(i, 3);
         // 开头为 and 或 or
         if (i == 0 && (optLen2 != "an" && optLen2 != "or")) {
-            return {{0, -1}};
+            return {{0, 0}};
         }
         // 碰到运算符，或者结尾，把之前的字符进行运算加入答案
         if (optLen2 == "an" || optLen2 == "or" || optLen2 == "no" ||
             i == s.size()) {
             if (lastopt != "" && !query.size()) {
-                return {{0, -2}};
+                return {{0, -1}};
             }
             if (round != 0)
                 if (lastopt == "an") {
@@ -553,7 +551,7 @@ vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
                     }
                 } else if (lastopt == "no") {
                     if (query.size() > 1) {
-                        return {{0, -3}};
+                        return {{0, -2}};
                     }
                     ansBody = minus2(ansBody, query[0]);
                     ansTitle = minus2(ansTitle, query[0], "1");

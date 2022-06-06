@@ -76,10 +76,12 @@
           :key="index"
         >
           <v-expansion-panel-header>
-            {{item.name}}：  {{item.score}}
+            <span>文档编号：{{item.id}}</span>
+            <span>得分：{{item.score.toFixed(15)}}</span>
           </v-expansion-panel-header>
           <v-expansion-panel-content class="text-justify">
-              {{item.content}}
+            <h3>{{item.title}}</h3>
+            <span>{{item.content}}</span>
           </v-expansion-panel-content>
         </v-expansion-panel>
       </v-expansion-panels>
@@ -130,21 +132,25 @@ export default {
         }
         var pwdblank = /^\S*$/
         if (!pwdblank.test(this.expression)) {
-          this.snackbar = true
           this.errMessage = '查询内容不能有空格！'
+          this.snackbar = true
           this.result = {}
           return
         }
-        this.searched = 1
         this.result = await SearchServices.index({
           expression: this.expression,
           position: this.position,
           mod: this.mod
         })
+        if (this.result.error !== undefined) {
+          this.errMessage = this.result.error
+          this.snackbar = true
+          return
+        }
+        this.searched = 1
       } catch (error) {
-        console.log(error)
-        // this.errMessage = error.response.data.error
-        this.errMessage = 'network error'
+        // console.log(error)
+        this.errMessage = 'service error'
         this.snackbar = true
       }
     }

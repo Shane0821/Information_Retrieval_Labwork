@@ -63,7 +63,7 @@ void PostingList::insert(const ListNode x) {
 }
 
 void PostingList::initWeight(const int& n) {
-    idf = log10(1.0 * n / cntFile);
+    idf = log2(1.0 * n / cntFile);
     for (auto& node : vlist) node.tf_idf = idf * node.tf;
 }
 
