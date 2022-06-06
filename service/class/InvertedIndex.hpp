@@ -74,14 +74,14 @@ class InvertedIndex {
 
     /**
      * @param queries 查询字符集合
-     * @param type 查询区域
+     * @param type 查询区域，0 表示 body，1 表示 title， 2 表示 both
      * @return 文档向量交集
      */
     vector<ListNode> intersectMulti(vector<string>& queries, string type = "0");
 
     /**
      * @param queries 查询字符集合
-     * @param type 查询区域
+     * @param type 查询区域，0 表示 body，1 表示 title， 2 表示 both
      * @return 文档向量并集
      */
     vector<ListNode> unionMulti(vector<string>& queries, string type = "0");
@@ -89,7 +89,7 @@ class InvertedIndex {
     /**
      * @param a 查询字符1
      * @param b 查询字符2
-     * @param type 查询区域
+     * @param type 查询区域，0 表示 body，1 表示 title， 2 表示 both
      * @return 文档向量差集
      */
     vector<ListNode> minus2(const string a, const string b, string type = "0");
@@ -97,7 +97,7 @@ class InvertedIndex {
     /**
      * @param a 文档向量
      * @param b 查询字符
-     * @param type 查询区域
+     * @param type 查询区域，0 表示 body，1 表示 title， 2 表示 both
      * @return 文档向量差集
      */
     vector<ListNode> minus2(vector<ListNode> a, string b, string type = "0");
@@ -125,11 +125,24 @@ class InvertedIndex {
     // 加载数据
     void loadFromDataset();
 
-    // 向量查询
+    /**
+     * 向量查询
+     * @param s 查询表达式
+     * @return 文档得分、编号组成的向量
+     */
     vector<pair<double, int>> vectorQuery(string s);
-    // 布尔查询
+    /**
+     * 布尔查询
+     * @param s 查询表达式
+     * @param position 查询位置，0 为 body，1 为 title，2 为 both
+     * @return 文档得分、编号组成的向量
+     */
     vector<pair<double, int>> boolQuery(string s, string position = "0");
-    // 语言模型
+    /**
+     * 语言模型
+     * @param s 查询表达式
+     * @return 文档得分、编号组成的向量
+     */
     vector<pair<double, int>> languageModel(string s);
 };
 double InvertedIndex::gBody = 0.7;
@@ -493,6 +506,12 @@ vector<pair<double, int>> InvertedIndex::vectorQuery(string s) {
     return heuristicTopK(query, K);
 }
 
+/*
+第一个文件的 fileId < 0 表示出错
+-1: 请以 and 或 or 开头！
+-2: 布尔运算符后应有字符！
+-3: not 后面只能跟一个字符！
+*/
 vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
     string lastopt = "";
     vector<ListNode> ansBody;
@@ -503,15 +522,13 @@ vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
         string optLen3 = s.substr(i, 3);
         // 开头为 and 或 or
         if (i == 0 && (optLen2 != "an" && optLen2 != "or")) {
-            cout << "请以 and 或 or 开头！\n";
-            break;
+            return {{0, -1}};
         }
         // 碰到运算符，或者结尾，把之前的字符进行运算加入答案
         if (optLen2 == "an" || optLen2 == "or" || optLen2 == "no" ||
             i == s.size()) {
             if (lastopt != "" && !query.size()) {
-                cout << "算符后应该有字符！\n";
-                break;
+                return {{0, -2}};
             }
             if (round != 0)
                 if (lastopt == "an") {
@@ -536,8 +553,7 @@ vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
                     }
                 } else if (lastopt == "no") {
                     if (query.size() > 1) {
-                        cout << "not 后面只能跟一个字符！\n";
-                        break;
+                        return {{0, -3}};
                     }
                     ansBody = minus2(ansBody, query[0]);
                     ansTitle = minus2(ansTitle, query[0], "1");
@@ -562,6 +578,9 @@ vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
         sort(combined.begin(), combined.end());
         for (auto& node : combined) res.push_back({node.tf_idf, node.fileId});
     }
+    // 截断，获取 top K
+    // const static int K = 20;
+    // if (res.size() > K) res.resize(K);
     return res;
 }
 
