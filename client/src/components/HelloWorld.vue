@@ -36,7 +36,7 @@
             clearable
             v-model="expression"
         ></v-text-field>
-        <v-btn icon class="mt-3" @click="()=>{query(); searched = 1}">
+        <v-btn icon class="mt-3" @click="()=>{query()}">
           <v-icon>
             mdi-magnify
           </v-icon>
@@ -66,13 +66,13 @@
     <v-divider width="90%" class="mx-auto"></v-divider>
     <!-- 查询结果 -->
     <v-card elevation="2" width="80%" class="mx-auto mt-4">
-      <v-title
-          v-if="result.length===0 && searched"
+      <v-banner
+          v-if="result.data===undefined && searched"
           class="mx-auto"
-      >无匹配结果</v-title>
+      >无匹配结果</v-banner>
       <v-expansion-panels multiple v-else>
         <v-expansion-panel
-          v-for="(item, index) in result"
+          v-for="(item, index) in result.data"
           :key="index"
         >
           <v-expansion-panel-header>
@@ -86,7 +86,7 @@
     </v-card>
     <v-snackbar
       v-model="snackbar"
-      timeout="5000"
+      timeout="2500"
       top
       right
     >
@@ -118,23 +118,24 @@ export default {
       expression: '',
       errMessage: 'error',
       snackbar: false,
-      result: []
+      result: {}
     }
   },
   methods: {
     async query () {
       try {
         if (!this.expression) {
-          this.result = []
+          this.result = {}
           return
         }
         var pwdblank = /^\S*$/
         if (!pwdblank.test(this.expression)) {
           this.snackbar = true
           this.errMessage = '查询内容不能有空格！'
-          this.result = []
+          this.result = {}
           return
         }
+        this.searched = 1
         this.result = await SearchServices.index({
           expression: this.expression,
           position: this.position,
@@ -143,7 +144,7 @@ export default {
       } catch (error) {
         console.log(error)
         // this.errMessage = error.response.data.error
-        this.errMessage = 'error'
+        this.errMessage = 'network error'
         this.snackbar = true
       }
     }

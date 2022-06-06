@@ -18,14 +18,22 @@ signed main() {
     Server svr;
 
     svr.Get("/", [&](const Request &req, Response &res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Cache-Control", "no-cache");
+
         string expression = req.get_param_value("expression");
         string mod = req.get_param_value("mod");
         string position = req.get_param_value("position");
-        
+
         Json::Value ret;
 
-        ret["response"]["x"] = 1;
-        
+        Json::Value new_item;
+        new_item["name"] = "滕王阁序";
+        new_item["content"] = "落霞与孤鹜齐飞";
+        new_item["score"] = 23.33;
+
+        ret.append(new_item);
+
         if (mod == "0") {
             // puts("m0");
         } else if (mod == "1") {
@@ -33,6 +41,7 @@ signed main() {
         } else {
             // myLexicon.languageModel(expression);
         }
+
         res.set_content(ret.toStyledString(), "text/plain");
     });
     svr.listen("localhost", 8081);
