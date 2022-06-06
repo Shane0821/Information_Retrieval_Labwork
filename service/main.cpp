@@ -1,9 +1,9 @@
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 #include <bits/stdc++.h>
 
 #include "./class/InvertedIndex.hpp"
-
-using namespace std;
-
+#include "httplib.h"
 /**
  * encoding: GBK
  */
@@ -12,33 +12,62 @@ signed main() {
     InvertedIndex myLexicon;
     myLexicon.loadFromDataset();
 
-    while (1) {
-        string s;
-        // ≤È—Ø¿‡–Õ
-        string querytype;
-        while (querytype != "vector" && querytype != "bool" &&
-               querytype != "language") {
-            cout << "«Î ‰»Î≤È—Øƒ£–Õ£®bool/vector/language£©£∫\n";
-            cin >> querytype;
+    using namespace httplib;
+    Server svr;
+
+    svr.Get("/", [](const Request &req, Response &res) {
+        if (req.has_param("expression")) {
+            auto val = req.get_param_value("expression");
+            cout << val.size() << endl;
+            for (int i = 0; i < val.size(); i += 3) {
+                cout << val.substr(i, 3) << endl;
+            }
         }
-        // cout << "«Î ‰»Î≤È—ØŒª÷√";
-
-        cout << "«Î ‰»Î≤È—Ø±Ì¥Ô Ω£®no spaces£©£∫\n";
-        cin >> s;
-
-        if (querytype == "bool")
-            myLexicon.boolQuery(s);
-        else if (querytype == "vector")
-            myLexicon.vectorQuery(s);
-        else
-            myLexicon.languageModel(s);
-
-        string check;
-        while (check != "y" && check != "n") {
-            cout << " «∑ÒºÃ–¯≤È—Ø£®y/n£©£ø\n";
-            cin >> check;
+        if (req.has_param("mod")) {
+            auto val = req.get_param_value("mod");
+            cout << val << endl;
         }
-        if (check == "n") break;
-    }
+        if (req.has_param("position")) {
+            auto val = req.get_param_value("position");
+            cout << val << endl;
+        }
+
+        res.set_content("Hello World!", "text/plain");
+    });
+    svr.listen("localhost", 8081);
+
+    // while (1) {
+    //     string s;
+    //     // Êü•ËØ¢Á±ªÂûã
+    //     string querytype;
+    //     while (querytype != "vector" && querytype != "bool" &&
+    //            querytype != "language") {
+    //         cout << "ËØ∑ËæìÂÖ•Êü•ËØ¢Ê®°ÂûãÔºàbool/vector/languageÔºâÔºö\n";
+    //         cin >> querytype;
+    //     }
+    //     // cout << "ËØ∑ËæìÂÖ•Êü•ËØ¢‰ΩçÁΩÆ";
+
+    //     cout << "ËØ∑ËæìÂÖ•Êü•ËØ¢Ë°®ËææÂºèÔºàno spacesÔºâÔºö\n";
+    //     cin >> s;
+
+    //     if (querytype == "bool")
+    //         myLexicon.boolQuery(s);
+    //     else if (querytype == "vector")
+    //         myLexicon.vectorQuery(s);
+    //     else
+    //         myLexicon.languageModel(s);
+
+    //     string check;
+    //     while (check != "y" && check != "n") {
+    //         cout << "ÊòØÂê¶ÁªßÁª≠Êü•ËØ¢Ôºày/nÔºâÔºü\n";
+    //         cin >> check;
+    //     }
+    //     if (check == "n") break;
+    // }
     return 0;
 }
+
+/*
+g++ main.cpp -o main -lwsock32 -lws2_32
+main
+*/

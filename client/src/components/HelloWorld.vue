@@ -110,7 +110,7 @@ export default {
       position: 0,
       mod: 0,
       expression: '',
-      errMessage: '',
+      errMessage: 'error',
       snackbar: false,
       result: [
         {
@@ -129,13 +129,25 @@ export default {
   methods: {
     async query () {
       try {
+        if (!this.expression) {
+          this.result = []
+          return
+        }
+        var pwdblank = /^\S*$/
+        if (!pwdblank.test(this.expression)) {
+          this.snackbar = true
+          this.errMessage = '查询表达式不能有空格！'
+          this.result = []
+          return
+        }
         this.result = await SearchServices.index({
           expression: this.expression,
           position: this.position,
           mod: this.mod
         })
       } catch (error) {
-        this.errMessage = error.response.data.error
+        console.log(error)
+        // this.errMessage = error.response.data.error
         this.snackbar = true
       }
     }
