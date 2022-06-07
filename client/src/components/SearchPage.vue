@@ -142,10 +142,10 @@ export default {
           position: this.position,
           mod: this.mod
         })
-        console.log(this.result)
+        // console.log(this.result)
         this.searched = 1
       } catch (error) {
-        console.log(error)
+        // console.log(error)
         this.errMessage = error.response.data
         this.snackbar = true
       }

@@ -45,6 +45,7 @@ signed main() {
                 new_item["id"] = id;
 
                 ret.append(new_item);
+                cout << "bool\n";
             }
         } else if (mod == "1") {
             for (auto [score, id] : myLexicon.vectorQuery(expression)) {
@@ -56,6 +57,7 @@ signed main() {
                 new_item["id"] = id;
 
                 ret.append(new_item);
+                cout << "vector\n";
             }
         } else {
             for (auto [score, id] : myLexicon.languageModel(expression)) {
@@ -67,6 +69,7 @@ signed main() {
                 new_item["id"] = id;
 
                 ret.append(new_item);
+                cout << "language\n";
             }
         }
         res.set_content(ret.toStyledString(), "text/plain");

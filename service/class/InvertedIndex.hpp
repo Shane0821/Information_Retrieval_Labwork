@@ -128,7 +128,7 @@ class InvertedIndex {
     /**
      * 向量查询
      * @param s 查询表达式
-     * @return 文档得分、编号组成的向量
+     * @return 文档得分、编号组成的向量，第一个文档编号小于等于0表示输入格式有误
      */
     vector<pair<double, int>> vectorQuery(string s);
     /**
@@ -466,13 +466,18 @@ vector<pair<double, int>> InvertedIndex::heuristicTopK(
     sort(query.begin(), query.end(), cmp);
 
     vector<double> score(n + 1);
-    const double eps = 0.5;
+    int cnt = 0;
+    const double eps = 2.2;
     for (auto& pList : query) {
+        int k = 0;
         for (auto& node : pList->vlist2) {
-            if (node.tf_idf < eps) break;
+            if (node.tf_idf < eps && k > pList->vlist2.size() * 7 / 10) break;
+            cnt++;
+            k++;
             score[node.fileId] += node.tf_idf;
         }
     }
+    // cout << "vector: " << cnt << endl;
 
     for (int i = 1; i <= n; i++) {
         assert(contentLength[i] != 0);
@@ -583,7 +588,7 @@ vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
 }
 
 vector<pair<double, int>> InvertedIndex::languageModel(string s) {
-    const static double lambda = 0.5;
+    const static double lambda = 0.9;
     // 计算权重
     vector<double> score(n + 1);
     for (int d = 1; d <= n; d++) {
