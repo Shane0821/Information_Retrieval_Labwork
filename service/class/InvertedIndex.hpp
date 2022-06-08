@@ -13,23 +13,34 @@ class InvertedIndex {
    public:
     // body 中字符索引
     unordered_map<string, PostingList*> dictBody;
+
     // title 中字符索引
     unordered_map<string, PostingList*> dictTitle;
 
     // 标题权重
     static double gTitle;
+
     // 内容权重
     static double gBody;
+
     // 各个文件内容的长度
     int contentLength[n + 1];
+
     // 文档内容
     string docContent[n + 1];
+
     // 文档标题
     string docTitle[n + 1];
-    // cf 的和
+
+    // cf 的和，即所有文档的总长度
     static int cs;
 
    private:
+    /**
+     * @param score 得分向量
+     * @return 得分前 K 高的文档的得分和编号的集合
+     */
+    vector<pair<double, int>> getTopK(vector<double>& score);
     /**
      * @param a 文档向量1
      * @param b 文档向量2
@@ -107,15 +118,13 @@ class InvertedIndex {
      * @param K 需要返回的文档数
      * @return 满足要求的文档得分和编号的集合
      */
-    vector<pair<double, int>> fastCosineScore(vector<PostingList*> query,
-                                              int K);
-
+    vector<pair<double, int>> fastCosineScore(vector<PostingList*> query);
     /**
      * @param query 查询涉及的 PostingList
      * @param K 需要返回的文档数
      * @return 满足要求的文档得分和编号的集合
      */
-    vector<pair<double, int>> heuristicTopK(vector<PostingList*> query, int K);
+    vector<pair<double, int>> heuristicTopK(vector<PostingList*> query);
 
    public:
     // 构造函数
@@ -144,6 +153,12 @@ class InvertedIndex {
      * @return 文档得分、编号组成的向量
      */
     vector<pair<double, int>> languageModel(string s);
+    /**
+     * 概率模型
+     * @param s 查询表达式
+     * @return 文档得分、编号组成的向量
+     */
+    vector<pair<double, int>> probabilisticModel(string s);
 };
 double InvertedIndex::gBody = 0.7;
 double InvertedIndex::gTitle = 0.3;
@@ -434,7 +449,7 @@ vector<ListNode> InvertedIndex::minus2(vector<ListNode> a, string b,
 }
 
 vector<pair<double, int>> InvertedIndex::fastCosineScore(
-    vector<PostingList*> query, int K) {
+    vector<PostingList*> query) {
     vector<double> score(n + 1);
     for (auto& pList : query) {
         for (auto& node : pList->vlist) {
@@ -445,21 +460,11 @@ vector<pair<double, int>> InvertedIndex::fastCosineScore(
         assert(contentLength[i] != 0);
         score[i] /= contentLength[i];
     }
-
-    priority_queue<pair<double, int>> q;
-    for (int i = 1; i <= n; i++) q.push({score[i], -i});
-
-    vector<pair<double, int>> res;
-    for (int i = 1; i <= K; i++) {
-        auto tp = q.top();
-        q.pop();
-        res.push_back({tp.first, -tp.second});
-    }
-    return res;
+    return getTopK(score);
 }
 
 vector<pair<double, int>> InvertedIndex::heuristicTopK(
-    vector<PostingList*> query, int K) {
+    vector<PostingList*> query) {
     auto cmp = [&](const PostingList* a, const PostingList* b) -> bool {
         return a->idf > b->idf;
     };
@@ -467,23 +472,28 @@ vector<pair<double, int>> InvertedIndex::heuristicTopK(
 
     vector<double> score(n + 1);
     int cnt = 0;
-    const double eps = 2.2;
+    const double eps = 0.4;
     for (auto& pList : query) {
         int k = 0;
         for (auto& node : pList->vlist2) {
-            if (node.tf_idf < eps && k > pList->vlist2.size() * 7 / 10) break;
+            if (node.wf * pList->idf < eps && k > pList->vlist2.size() * 0.7)
+                break;
             cnt++;
             k++;
-            score[node.fileId] += node.tf_idf;
+            score[node.fileId] += node.wf * pList->idf;
         }
     }
-    // cout << "vector: " << cnt << endl;
+    cout << "vector: " << cnt << endl;
 
     for (int i = 1; i <= n; i++) {
         assert(contentLength[i] != 0);
         score[i] /= contentLength[i];
     }
+    return getTopK(score);
+}
 
+vector<pair<double, int>> InvertedIndex::getTopK(vector<double>& score) {
+    const static int K = 20;
     priority_queue<pair<double, int>> q;
     for (int i = 1; i <= n; i++) q.push({score[i], -i});
 
@@ -503,9 +513,8 @@ vector<pair<double, int>> InvertedIndex::vectorQuery(string s) {
         if (dictBody[tmp]) query.push_back(dictBody[tmp]);
     }
 
-    const int K = 20;
-    // auto res = fastCosineScore(query, K);
-    return heuristicTopK(query, K);
+    // return fastCosineScore(query);
+    return heuristicTopK(query);
 }
 
 vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
@@ -577,13 +586,13 @@ vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
         sort(ansBody.begin(), ansBody.end());
         for (auto& node : ansBody) res.push_back({node.tf_idf, node.fileId});
     } else {
-        auto combined = zoneScore(ansBody, ansTitle, 0);
+        auto combined = zoneScore(ansBody, ansTitle, 1);
         sort(combined.begin(), combined.end());
         for (auto& node : combined) res.push_back({node.tf_idf, node.fileId});
     }
     // 截断，获取 top K
-    // const static int K = 20;
-    // if (res.size() > K) res.resize(K);
+    const static int K = 20;
+    if (res.size() > K) res.resize(K);
     return res;
 }
 
@@ -603,17 +612,21 @@ vector<pair<double, int>> InvertedIndex::languageModel(string s) {
         }
         score[d] = tmp;
     }
+    return getTopK(score);
+}
 
-    // 取 topK
-    const static int K = 20;
-    priority_queue<pair<double, int>> q;
-    for (int i = 1; i <= n; i++) q.push({score[i], -i});
-
-    vector<pair<double, int>> res;
-    for (int i = 1; i <= K; i++) {
-        auto tp = q.top();
-        q.pop();
-        res.push_back({tp.first, -tp.second});
+vector<pair<double, int>> InvertedIndex::probabilisticModel(string s) {
+    vector<double> score(n + 1);
+    for (int d = 1; d <= n; d++) {
+        for (int i = 0; i < s.size(); i += 3) {
+            string cur = s.substr(i, 3);
+            if (cur == "\n" || cur == " ") continue;
+            int f = dictBody[cur]->getFreqOfDoc(d);
+            double K = 0.25 + 0.75 * contentLength[d] * n / cs;
+            double pt = 1.0 * (0.5 + dictBody[cur]->cntFile) / (n + 1);
+            double rsv = log2(pt / (1 - pt)) + dictBody[cur]->idf;
+            score[d] += rsv * f / (K + f);
+        }
     }
-    return res;
+    return getTopK(score);
 }

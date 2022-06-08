@@ -28,7 +28,7 @@ signed main() {
         Json::Value ret;
 
         if (mod == "0") {
-            for (auto [score, id] : myLexicon.boolQuery(expression)) {
+            for (auto [score, id] : myLexicon.boolQuery(expression, position)) {
                 if (id <= 0) {
                     res.status = 400;
                     res.set_content(id == 0 ? "请以 and 或 or 开头！"
@@ -43,10 +43,10 @@ signed main() {
                 new_item["content"] = myLexicon.docContent[id];
                 new_item["score"] = score;
                 new_item["id"] = id;
-
-                ret.append(new_item);
-                cout << "bool\n";
+                
+                ret["0"].append(new_item);
             }
+            cout << "bool\n";
         } else if (mod == "1") {
             for (auto [score, id] : myLexicon.vectorQuery(expression)) {
                 Json::Value new_item;
@@ -56,10 +56,8 @@ signed main() {
                 new_item["score"] = score;
                 new_item["id"] = id;
 
-                ret.append(new_item);
-                cout << "vector\n";
+                ret["1"].append(new_item);
             }
-        } else {
             for (auto [score, id] : myLexicon.languageModel(expression)) {
                 Json::Value new_item;
 
@@ -68,9 +66,20 @@ signed main() {
                 new_item["score"] = score;
                 new_item["id"] = id;
 
-                ret.append(new_item);
-                cout << "language\n";
+                ret["2"].append(new_item);
             }
+
+            for (auto [score, id] : myLexicon.probabilisticModel(expression)) {
+                Json::Value new_item;
+
+                new_item["title"] = myLexicon.docTitle[id];
+                new_item["content"] = myLexicon.docContent[id];
+                new_item["score"] = score;
+                new_item["id"] = id;
+
+                ret["3"].append(new_item);
+            }
+            cout << "natural language\n";
         }
         res.set_content(ret.toStyledString(), "text/plain");
     });

@@ -71,7 +71,9 @@ void PostingList::sorList2() {
     vlist2 = vlist;
 
     auto cmp = [&](const ListNode& a, const ListNode& b) -> bool {
-        return a.tf > b.tf;
+        return a.wf > b.wf;
+        if (a.wf == b.wf) return a.fileId < b.fileId;
+        // return a.tf > b.tf;
         // return a.fileLen > b.fileLen;
     };
 

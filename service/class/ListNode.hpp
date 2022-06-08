@@ -23,12 +23,14 @@ class ListNode {
      * @param tf 词频
      * @param wf 归一化权重
      */
-    ListNode(const int& fileId, const double tf_idf = 0, const int tf = 0, const int wf = 0, const int fileLen = 0);
+    ListNode(const int& fileId, const double tf_idf = 0, const int tf = 0,
+             const double wf = 0, const int fileLen = 0);
 
     friend bool operator<(const ListNode& a, const ListNode& b);
 };
 
-ListNode::ListNode(const int& fileId, const double tf_idf, const int tf, const int wf, const int fileLen) {
+ListNode::ListNode(const int& fileId, const double tf_idf, const int tf,
+                   const double wf, const int fileLen) {
     this->fileId = fileId;
     this->tf = tf;
     this->tf_idf = tf_idf;

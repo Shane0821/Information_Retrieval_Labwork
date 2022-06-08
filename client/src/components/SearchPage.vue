@@ -7,7 +7,7 @@
       ></v-img>
       <!-- 模型 -->
       <v-card-title>
-        查询模型
+        查询类型
         <v-btn-toggle
           v-model="mod"
           mandatory
@@ -19,10 +19,7 @@
             bool
           </v-btn>
           <v-btn class="ml-4">
-            vector
-          </v-btn>
-          <v-btn class="ml-4">
-            language
+            Natural language
           </v-btn>
         </v-btn-toggle>
       </v-card-title>
@@ -70,21 +67,71 @@
           v-if="result.data==undefined && searched"
           class="mx-auto"
       >无匹配结果</v-banner>
-      <v-expansion-panels multiple v-else>
-        <v-expansion-panel
-          v-for="(item, index) in result.data"
-          :key="index"
-        >
-          <v-expansion-panel-header>
-            <span>文档编号：{{item.id}}</span>
-            <span>得分：{{item.score.toFixed(15)}}</span>
-          </v-expansion-panel-header>
-          <v-expansion-panel-content class="text-justify">
-            <h3>{{item.title}}</h3>
-            <span>{{item.content}}</span>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
+      <!-- 布尔查询的结果 -->
+      <v-expansion-panels multiple v-if="result.data!=undefined && searched">
+       <v-expansion-panel
+         v-for="(item, index) in result.data['0']"
+         :key="index"
+       >
+        <v-expansion-panel-header>
+          <span>文档编号：{{item.id}}</span>
+          <span>得分：{{item.score.toFixed(15)}}</span>
+        </v-expansion-panel-header>
+        <v-expansion-panel-content class="text-justify">
+          <h3>{{item.title}}</h3>
+          <span>{{item.content}}</span>
+        </v-expansion-panel-content>
+       </v-expansion-panel>
       </v-expansion-panels>
+      <!-- 自然语言查询结果，支持三种模型对比 -->
+      <v-card v-if="result.data!=null && mod === 1 && searched">
+       <v-tabs
+        v-model="tab"
+        background-color="blue-grey lighten-1"
+        height=50
+        centered
+        dark
+        icons-and-text
+       >
+        <v-tabs-slider></v-tabs-slider>
+
+        <v-tab href="#tab-1">
+          vector
+        </v-tab>
+
+        <v-tab href="#tab-2">
+          language
+        </v-tab>
+
+        <v-tab href="#tab-3">
+          probabilistic
+        </v-tab>
+      </v-tabs>
+
+      <v-tabs-items v-model="tab">
+        <v-tab-item
+          v-for="i in 3"
+          :key="i"
+          :value="'tab-' + i"
+        >
+         <v-expansion-panels multiple>
+          <v-expansion-panel
+            v-for="(item, index) in result.data[i.toString()]"
+            :key="index"
+          >
+            <v-expansion-panel-header>
+              <span>文档编号：{{item.id}}</span>
+              <span>得分：{{item.score.toFixed(15)}}</span>
+            </v-expansion-panel-header>
+            <v-expansion-panel-content class="text-justify">
+              <h3>{{item.title}}</h3>
+              <span>{{item.content}}</span>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+         </v-expansion-panels>
+        </v-tab-item>
+       </v-tabs-items>
+      </v-card>
     </v-card>
     <v-snackbar
       v-model="snackbar"
@@ -114,6 +161,7 @@ export default {
   name: 'SearchPage',
   data () {
     return {
+      tab: null,
       searched: 0,
       position: 0,
       mod: 0,
@@ -142,7 +190,7 @@ export default {
           position: this.position,
           mod: this.mod
         })
-        // console.log(this.result)
+        console.log(this.result)
         this.searched = 1
       } catch (error) {
         // console.log(error)
