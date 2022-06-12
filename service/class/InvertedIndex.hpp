@@ -580,13 +580,16 @@ vector<pair<double, int>> InvertedIndex::boolQuery(string s, string position) {
     }
     vector<pair<double, int>> res;
     if (position == "1") {
+        for (auto& node : ansTitle) node.tf_idf /= contentLength[node.fileId];
         sort(ansTitle.begin(), ansTitle.end());
         for (auto& node : ansTitle) res.push_back({node.tf_idf, node.fileId});
     } else if (position == "0") {
+        for (auto& node : ansBody) node.tf_idf /= contentLength[node.fileId];
         sort(ansBody.begin(), ansBody.end());
         for (auto& node : ansBody) res.push_back({node.tf_idf, node.fileId});
     } else {
         auto combined = zoneScore(ansBody, ansTitle, 1);
+        for (auto& node : combined) node.tf_idf /= contentLength[node.fileId];
         sort(combined.begin(), combined.end());
         for (auto& node : combined) res.push_back({node.tf_idf, node.fileId});
     }
@@ -602,16 +605,23 @@ vector<pair<double, int>> InvertedIndex::languageModel(string s) {
     vector<double> score(n + 1);
     for (int d = 1; d <= n; d++) {
         double tmp = 1;
+        int tag = 0;
         for (int i = 0; i < s.size(); i += 3) {
             string cur = s.substr(i, 3);
             if (cur == "\n" || cur == " ") continue;
+            if (!dictBody[cur]) continue;
+            tag = 1;
             assert(contentLength[d] != 0);
             assert(cs != 0);
             tmp *= lambda * dictBody[cur]->getFreqOfDoc(d) / contentLength[d] +
                    (1.0 - lambda) * dictBody[cur]->totalFreq / cs;
         }
-        score[d] = tmp;
+        score[d] = tmp * tag;
     }
+    double mx = *max_element(score.begin(), score.end());
+    // 由于结果可能很小，因此归一化
+    if (mx != 0)
+    for (auto& v: score) v/=mx; 
     return getTopK(score);
 }
 
@@ -621,6 +631,7 @@ vector<pair<double, int>> InvertedIndex::probabilisticModel(string s) {
         for (int i = 0; i < s.size(); i += 3) {
             string cur = s.substr(i, 3);
             if (cur == "\n" || cur == " ") continue;
+            if (!dictBody[cur]) continue;
             int f = dictBody[cur]->getFreqOfDoc(d);
             double K = 0.25 + 0.75 * contentLength[d] * n / cs;
             double pt = 1.0 * (0.5 + dictBody[cur]->cntFile) / (n + 1);

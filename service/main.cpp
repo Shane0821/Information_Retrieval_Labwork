@@ -43,7 +43,7 @@ signed main() {
                 new_item["content"] = myLexicon.docContent[id];
                 new_item["score"] = score;
                 new_item["id"] = id;
-                
+
                 ret["0"].append(new_item);
             }
             cout << "bool\n";
@@ -58,6 +58,7 @@ signed main() {
 
                 ret["1"].append(new_item);
             }
+            cout << "vector\n";
             for (auto [score, id] : myLexicon.languageModel(expression)) {
                 Json::Value new_item;
 
@@ -68,7 +69,7 @@ signed main() {
 
                 ret["2"].append(new_item);
             }
-
+            cout << "language\n";
             for (auto [score, id] : myLexicon.probabilisticModel(expression)) {
                 Json::Value new_item;
 
@@ -79,6 +80,7 @@ signed main() {
 
                 ret["3"].append(new_item);
             }
+            cout << "probabilistic\n";
             cout << "natural language\n";
         }
         res.set_content(ret.toStyledString(), "text/plain");

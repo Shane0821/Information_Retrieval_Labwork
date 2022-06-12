@@ -121,7 +121,7 @@
           >
             <v-expansion-panel-header>
               <span>文档编号：{{item.id}}</span>
-              <span>得分：{{item.score.toFixed(15)}}</span>
+              <span>得分：{{item.score.toFixed(10)}}</span>
             </v-expansion-panel-header>
             <v-expansion-panel-content class="text-justify">
               <h3>{{item.title}}</h3>
