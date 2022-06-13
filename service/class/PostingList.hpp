@@ -12,7 +12,7 @@ class PostingList {
    public:
     // 存储链表节点
     vector<ListNode> vlist;
-    // 按节点 tf 降序排列
+    // 按节点 wf 降序排列
     vector<ListNode> vlist2;
     // 文件总数
     int cntFile;
@@ -20,9 +20,7 @@ class PostingList {
     int totalFreq;
     // 逆文档频率
     double idf;
-    // retrieval status value
-    double rsv;
-    // 相对文档长度
+    // PostingList 中文档长度总和 / 所有文档长度总和
     double Mc;
 
    public:
@@ -69,10 +67,6 @@ void PostingList::insert(const ListNode x) {
 void PostingList::initWeight(const int& n, const int cs) {
     idf = log2(1.0 * n / cntFile);
     for (auto& node : vlist) node.tf_idf = idf * node.tf;
-
-    double pt = 1.0 * (0.5 + cntFile) / (n + 1);
-    rsv = log2(pt / (1 - pt)) + idf;
-
     if (!cs) {
         Mc = 0;
         return;

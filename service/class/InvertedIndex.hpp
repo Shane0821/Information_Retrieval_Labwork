@@ -17,12 +17,6 @@ class InvertedIndex {
     // title 中字符索引
     unordered_map<string, PostingList*> dictTitle;
 
-    // 标题权重
-    static double gTitle;
-
-    // 内容权重
-    static double gBody;
-
     // 各个文件内容的长度
     int contentLength[n + 1];
 
@@ -34,6 +28,12 @@ class InvertedIndex {
 
     // cf 的和，即所有文档的总长度
     static int cs;
+
+    // 标题权重
+    static double gTitle;
+
+    // 内容权重
+    static double gBody;
 
    private:
     /**
@@ -498,10 +498,11 @@ vector<pair<double, int>> InvertedIndex::getTopK(vector<double>& score) {
     for (int i = 1; i <= n; i++) q.push({score[i], -i});
 
     vector<pair<double, int>> res;
+    double mx = q.top().first;
     for (int i = 1; i <= K; i++) {
         auto tp = q.top();
         q.pop();
-        res.push_back({tp.first, -tp.second});
+        res.push_back({mx == 0 ? tp.first : tp.first / mx, -tp.second});
     }
     return res;
 }
@@ -618,15 +619,25 @@ vector<pair<double, int>> InvertedIndex::languageModel(string s) {
         }
         score[d] = tmp * tag;
     }
-    double mx = *max_element(score.begin(), score.end());
-    // 由于结果可能很小，因此归一化
-    if (mx != 0)
-        for (auto& v : score) v /= mx;
     return getTopK(score);
 }
 
 vector<pair<double, int>> InvertedIndex::probabilisticModel(string s) {
     vector<double> score(n + 1);
+    // 计算相关文档总数
+    int VR = 0;
+    unordered_map<int, bool> vis;
+    for (int i = 0; i < s.size(); i += 3) {
+        string cur = s.substr(i, 3);
+        if (cur == "\n" || cur == " ") continue;
+        if (!dictBody[cur]) continue;
+        for (auto& node : dictBody[cur]->vlist) {
+            if (!vis[node.fileId]) {
+                vis[node.fileId] = 1;
+                VR++;
+            }
+        }
+    }
     for (int d = 1; d <= n; d++) {
         for (int i = 0; i < s.size(); i += 3) {
             string cur = s.substr(i, 3);
@@ -634,7 +645,9 @@ vector<pair<double, int>> InvertedIndex::probabilisticModel(string s) {
             if (!dictBody[cur]) continue;
             int f = dictBody[cur]->getFreqOfDoc(d);
             double K = 0.25 + 0.75 * contentLength[d] * n / cs;
-            score[d] += dictBody[cur]->rsv * f / (K + f);
+            double pt = 1.0 * (0.5 + dictBody[cur]->cntFile) / (VR + 1);
+            double rsv = log2(pt / (1 - pt)) + dictBody[cur]->idf;
+            score[d] += rsv * 2.0 * f / (K + f);
         }
     }
     return getTopK(score);
