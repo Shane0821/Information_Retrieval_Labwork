@@ -502,6 +502,7 @@ vector<pair<double, int>> InvertedIndex::getTopK(vector<double>& score) {
     for (int i = 1; i <= K; i++) {
         auto tp = q.top();
         q.pop();
+        // 归一化
         res.push_back({mx == 0 ? tp.first : tp.first / mx, -tp.second});
     }
     return res;
