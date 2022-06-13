@@ -241,7 +241,7 @@ void InvertedIndex::loadFromDataset() {
     cout << "Dataset loaded successfully!\n";
 
     // 初始化文件权重
-    for (auto& p : dictBody) p.second->initWeight(n), p.second->sorList2();
+    for (auto& p : dictBody) p.second->initWeight(n, cs), p.second->sorList2();
     for (auto& p : dictTitle) p.second->initWeight(n);
     cout << "Weight initialized.\n";
 }
@@ -614,14 +614,14 @@ vector<pair<double, int>> InvertedIndex::languageModel(string s) {
             assert(contentLength[d] != 0);
             assert(cs != 0);
             tmp *= lambda * dictBody[cur]->getFreqOfDoc(d) / contentLength[d] +
-                   (1.0 - lambda) * dictBody[cur]->totalFreq / cs;
+                   (1.0 - lambda) * dictBody[cur]->Mc;
         }
         score[d] = tmp * tag;
     }
     double mx = *max_element(score.begin(), score.end());
     // 由于结果可能很小，因此归一化
     if (mx != 0)
-    for (auto& v: score) v/=mx; 
+        for (auto& v : score) v /= mx;
     return getTopK(score);
 }
 
@@ -634,9 +634,7 @@ vector<pair<double, int>> InvertedIndex::probabilisticModel(string s) {
             if (!dictBody[cur]) continue;
             int f = dictBody[cur]->getFreqOfDoc(d);
             double K = 0.25 + 0.75 * contentLength[d] * n / cs;
-            double pt = 1.0 * (0.5 + dictBody[cur]->cntFile) / (n + 1);
-            double rsv = log2(pt / (1 - pt)) + dictBody[cur]->idf;
-            score[d] += rsv * f / (K + f);
+            score[d] += dictBody[cur]->rsv * f / (K + f);
         }
     }
     return getTopK(score);

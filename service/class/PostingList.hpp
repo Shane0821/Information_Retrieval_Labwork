@@ -20,6 +20,10 @@ class PostingList {
     int totalFreq;
     // 逆文档频率
     double idf;
+    // retrieval status value
+    double rsv;
+    // 相对文档长度
+    double Mc;
 
    public:
     // 构造函数
@@ -38,7 +42,7 @@ class PostingList {
     vector<pair<int, double>> toVector();
 
     // 初始化所有节点权重，注意若插入新节点需要重新初始化
-    void initWeight(const int& n);
+    void initWeight(const int& n, const int cs = 0);
 
     // 对 vlist2 按 tf 从高到低排序
     void sorList2();
@@ -62,9 +66,18 @@ void PostingList::insert(const ListNode x) {
     totalFreq += x.tf;
 }
 
-void PostingList::initWeight(const int& n) {
+void PostingList::initWeight(const int& n, const int cs) {
     idf = log2(1.0 * n / cntFile);
     for (auto& node : vlist) node.tf_idf = idf * node.tf;
+
+    double pt = 1.0 * (0.5 + cntFile) / (n + 1);
+    rsv = log2(pt / (1 - pt)) + idf;
+
+    if (!cs) {
+        Mc = 0;
+        return;
+    }
+    Mc = 1.0 * totalFreq / cs;
 }
 
 void PostingList::sorList2() {
