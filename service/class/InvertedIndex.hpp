@@ -472,15 +472,11 @@ vector<pair<double, int>> InvertedIndex::heuristicTopK(
 
     vector<double> score(n + 1);
     int cnt = 0;
-    const double eps = 0.4;
+    const double eps = 0.1;
     for (auto& pList : query) {
-        int k = 0;
         for (auto& node : pList->vlist2) {
-            if (node.wf * pList->idf < eps && k > pList->vlist2.size() * 0.7)
-                break;
             cnt++;
-            k++;
-            score[node.fileId] += node.wf * pList->idf;
+            score[node.fileId] += node.tf_idf;
         }
     }
     cout << "vector: " << cnt << endl;
